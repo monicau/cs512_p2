@@ -1,4 +1,6 @@
-#cs512 Project deliverable 1
+#cs512 Project deliverable 2
+
+Add transactions!
 
 ##Prerequisites
 - JDK (8+)
