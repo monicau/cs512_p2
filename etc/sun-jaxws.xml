@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<endpoints
+  xmlns="http://java.sun.com/xml/ns/jax-ws/ri/runtime"
+  version="2.0">
+
+  <!-- 
+  		define html locations
+  		ex.
+  		http://host:port/{service-name}/{url-pattern}
+  		{service-name} is defined in the Main.java? <- build.xml
+   -->
+
+  <endpoint
+      name="ResourceManager"
+      implementation="server.ResourceManagerImpl"
+      url-pattern="/rm"/> 	
+	
+  
+</endpoints>
