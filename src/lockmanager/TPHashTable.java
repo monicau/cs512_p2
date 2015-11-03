@@ -58,7 +58,7 @@ public class TPHashTable
         
         XObj xobj2;
         int size = vectSlot.size();
-        for ( int i = (size - 1); i >= 0; i-- ) {
+        for ( int i = 0; i < size; i++ ) {
             xobj2 = (XObj) vectSlot.elementAt(i);
             if ( xobj.key() == xobj2.key() ) {
                 elemVect.addElement(xobj2);
@@ -116,7 +116,7 @@ public class TPHashTable
             xobj2 = (XObj) vectSlot.elementAt(i);
             if ( xobj.equals(xobj2) ) {
                 return xobj2;
-            }
+            } 
         }
         return null;
     }
