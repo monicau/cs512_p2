@@ -29,12 +29,14 @@ import com.google.gson.Gson;
 @WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {
 	private String MW_LOCATION = "localhost";
+	private int txnCounter;
 
 	boolean useWebService;
 	
 	AtomicReference<Messenger> messenger_ref = new AtomicReference<>();
 	
 	public ResourceManagerImpl() {
+		txnCounter = 0;
 		//Determine if we are using web services or tcp
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(new File("serviceType.txt")));
@@ -547,4 +549,29 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         return false;
     }
 
+    /* Start a new transaction and return its id. */
+	@Override
+	synchronized public int start() {
+		int temp = txnCounter;
+		txnCounter++;
+		return temp;
+	}
+    /* Attempt to commit the given transaction; return true upon success. */
+	@Override
+	public boolean commit(int transactionId) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+    /* Abort the given transaction */
+	@Override
+	public boolean abort(int transactionId) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+    /* Shut down gracefully */
+	@Override
+	public boolean shutdown() {
+		// TODO Auto-generated method stub
+		return false;
+	}
 }

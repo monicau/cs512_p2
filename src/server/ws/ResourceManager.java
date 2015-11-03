@@ -146,10 +146,25 @@ public interface ResourceManager {
     @WebMethod
     public boolean reserveRoom(int id, int customerId, String location); 
 
-
     /* Reserve an itinerary. */
     @WebMethod
     public boolean reserveItinerary(int id, int customerId, Vector flightNumbers, 
                                     String location, boolean car, boolean room);
+    
+    /* Start a new transaction and return its id. */
+    @WebMethod
+    public int start(); 
+    
+    /* Attempt to commit the given transaction; return true upon success. */
+    @WebMethod
+    public boolean commit(int transactionId);
+    
+    /* Abort the given transaction */
+    @WebMethod
+    public boolean abort(int transactionId);
+    
+    /* Shut down gracefully */
+    @WebMethod
+    public boolean shutdown();
     			
 }

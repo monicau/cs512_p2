@@ -43,6 +43,8 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import javax.jws.WebMethod;
 import javax.jws.WebService;
 
+import lockmanager.LockManager;
+
 import com.google.gson.Gson;
 
 
@@ -53,6 +55,8 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	ResourceManager proxyRoom;
 	ResourceManagerImplService service;
 	boolean useWebService;
+	private int txnCounter;
+	private LockManager lm;
 
 	int next_port = 8098;
 	Map<Integer, Socket> resourceManagers = new HashMap<>();
@@ -66,6 +70,8 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	
 	public MiddlewareImpl(){
 		System.out.println("Starting middleware");
+		txnCounter = 0;
+		lm = new LockManager();
 		//Determine if we are using web services or tcp
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(new File("serviceType.txt")));
@@ -532,6 +538,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean deleteCustomer(int id, int customerId) {
 		Trace.info("MW::deleteCustomer(" + id + ", " + customerId + ") called.");
+		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
 		if (cust == null) {
 			Trace.warn("MW::deleteCustomer(" + id + ", " 
@@ -573,6 +580,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public RMMap getCustomerReservations(int id, int customerId) {
 		Trace.info("MW::getCustomerReservations(" + id + ", " 
 				+ customerId + ") called.");
+		lm.Lock(id, "customer_" + customerId, LockManager.READ);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
 		if (cust == null) {
 			Trace.info("MW::getCustomerReservations(" + id + ", " 
@@ -587,6 +595,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public String queryCustomerInfo(int id, int customerId) {
 		Trace.info("MW::queryCustomerInfo(" + id + ", " + customerId + ") called.");
+		lm.Lock(id, "customer_" + customerId, LockManager.READ);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
 		if (cust == null) {
 			Trace.warn("MW::queryCustomerInfo(" + id + ", " 
@@ -613,6 +622,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean reserveFlight(int id, int customerId, int flightNumber) {
 		// Read customer object if it exists (and read lock it).
+		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
 		if (cust == null) {
 			Trace.warn("MW::reserveFlight(" + id + ", " + customerId +  ", " + flightNumber + ") failed: customer doesn't exist.");
@@ -635,6 +645,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean reserveCar(int id, int customerId, String location) {
 		// Read customer object if it exists (and read lock it).
+		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
 		if (cust == null) {
 			Trace.warn("MW::reserveCar(" + id + ", " + customerId +  ", " + location + ") failed: customer doesn't exist.");
@@ -657,6 +668,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean reserveRoom(int id, int customerId, String location) {
 		// Read customer object if it exists (and read lock it).
+		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
 		if (cust == null) {
 			Trace.warn("MW::reserveRoom(" + id + ", " + customerId +  ", " + location + ") failed: customer doesn't exist.");
@@ -755,6 +767,32 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		}
 
 		return true;
+	}
+	
+    /* Start a new transaction and return its id. */
+	@Override
+	synchronized public int start() {
+		int temp = txnCounter;
+		txnCounter++;
+		return temp;
+	}
+    /* Attempt to commit the given transaction; return true upon success. */
+	@Override
+	public boolean commit(int transactionId) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+    /* Abort the given transaction */
+	@Override
+	public boolean abort(int transactionId) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+    /* Shut down gracefully */
+	@Override
+	public boolean shutdown() {
+		// TODO Auto-generated method stub
+		return false;
 	}
 
 }
