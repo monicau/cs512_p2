@@ -64,6 +64,23 @@ public class LockManager
                             // lock conversion 
                             // *** ADD CODE HERE *** to carry out the lock conversion in the
                             // lock table
+                        	//convert lock to WRITE for dataObj and txnObj
+                        	Vector v = this.lockTable.elements(trxnObj);
+                        	for (int i=0; i<v.size(); i++) {
+                        		TrxnObj o = (TrxnObj) v.elementAt(i);
+                        		if (o.getXId()==trxnObj.getXId()) {
+                        			System.out.println("Setting lock of trxnObj in locktable to WRITE");
+                        			o.setLockType(LockManager.WRITE);
+                        		}
+                        	}
+                        	v = this.lockTable.elements(dataObj);
+                        	for (int i=0; i<v.size(); i++) {
+                        		DataObj o = (DataObj) v.elementAt(i);
+                        		if (o.getXId() == dataObj.getXId()) {
+                        			System.out.println("Setting lock of dataObj in locktable to WRITE");
+                        			o.setLockType(LockManager.WRITE);
+                        		}
+                        	}
                         } else {
                             // a lock request that is not lock conversion
                             this.lockTable.add(trxnObj);
@@ -181,7 +198,7 @@ public class LockManager
     // is set. 
     
     private boolean LockConflict(DataObj dataObj, BitSet bitset) throws DeadlockException, RedundantLockRequestException {
-        Vector vect = this.lockTable.elements(dataObj);
+        Vector vect = this.lockTable.elements(dataObj); // get list of all locks on this data
         DataObj dataObj2;
         int size = vect.size();
         
@@ -203,8 +220,15 @@ public class LockManager
                     // (2) transaction already had a WRITE lock
                     // Seeing the comments at the top of this function might be helpful
                     // *** ADD CODE HERE *** to take care of both these cases
+                	// Case (1)
+                	if (dataObj2.getLockType() == DataObj.READ) {
+                		//Convert read to write lock
+                		bitset.flip(0);
+                	} else {
+                	// Case (2), already have write lock. Do nothing.
+                	}
                 }
-            } 
+            }
             else {
                 if (dataObj.getLockType() == DataObj.READ) {
                     if (dataObj2.getLockType() == DataObj.WRITE) {
