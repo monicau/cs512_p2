@@ -21,6 +21,8 @@ import java.util.*;
 import javax.jws.WebService;
 import javax.jws.WebMethod;
 
+import lockmanager.DeadlockException;
+
 
 @WebService
 public interface ResourceManager {
@@ -112,7 +114,7 @@ public interface ResourceManager {
         
     /* Create a new customer and return their unique identifier. */
     @WebMethod
-    public int newCustomer(int id); 
+    public int newCustomer(int id) throws DeadlockException; 
     
     /* Create a new customer with the provided identifier. */
     @WebMethod
@@ -120,11 +122,11 @@ public interface ResourceManager {
 
     /* Remove this customer and all their associated reservations. */
     @WebMethod
-    public boolean deleteCustomer(int id, int customerId); 
+    public boolean deleteCustomer(int id, int customerId) throws DeadlockException; 
 
     /* Return a bill. */
     @WebMethod
-    public String queryCustomerInfo(int id, int customerId); 
+    public String queryCustomerInfo(int id, int customerId) throws DeadlockException; 
     
     /* Resource manager's reserve method */
     @WebMethod
@@ -136,20 +138,20 @@ public interface ResourceManager {
     
     /* Reserve a seat on this flight. */
     @WebMethod
-    public boolean reserveFlight(int id, int customerId, int flightNumber); 
+    public boolean reserveFlight(int id, int customerId, int flightNumber) throws DeadlockException; 
 
     /* Reserve a car at this location. */
     @WebMethod
-    public boolean reserveCar(int id, int customerId, String location); 
+    public boolean reserveCar(int id, int customerId, String location) throws DeadlockException; 
 
     /* Reserve a room at this location. */
     @WebMethod
-    public boolean reserveRoom(int id, int customerId, String location); 
+    public boolean reserveRoom(int id, int customerId, String location) throws DeadlockException; 
 
     /* Reserve an itinerary. */
     @WebMethod
     public boolean reserveItinerary(int id, int customerId, Vector flightNumbers, 
-                                    String location, boolean car, boolean room);
+                                    String location, boolean car, boolean room) throws DeadlockException;
     
     /* Start a new transaction and return its id. */
     @WebMethod

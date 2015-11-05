@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -43,6 +44,7 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import javax.jws.WebMethod;
 import javax.jws.WebService;
 
+import lockmanager.DeadlockException;
 import lockmanager.LockManager;
 
 import com.google.gson.Gson;
@@ -55,6 +57,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	ResourceManager proxyRoom;
 	ResourceManagerImplService service;
 	boolean useWebService;
+	Hashtable<Integer, Vector<ItemHistory>> txnHistory;
 	private int txnCounter;
 	private LockManager lm;
 
@@ -71,6 +74,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public MiddlewareImpl(){
 		System.out.println("Starting middleware");
 		txnCounter = 0;
+		txnHistory = new Hashtable<Integer, Vector<ItemHistory>>();
 		lm = new LockManager();
 		//Determine if we are using web services or tcp
 		try {
@@ -502,7 +506,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Customer operations //
 
 	@Override
-	public int newCustomer(int id) {
+	public int newCustomer(int id) throws DeadlockException {
 		Trace.info("INFO: MW::newCustomer(" + id + ") called.");
 		// Generate a globally unique Id for the new customer.
 		int customerId;
@@ -511,7 +515,14 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 					String.valueOf(Calendar.getInstance().get(Calendar.MILLISECOND)) +
 					String.valueOf(Math.round(Math.random() * 100 + 1)));
 		}
+		//Write lock on new customer
+		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		Customer cust = new Customer(customerId);
+		
+		//Add customer to txn history
+		ItemHistory backup = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.ADDED, cust);
+		addHistory(id, backup);
+		
 		writeData(id, cust.getKey(), cust);
 		Trace.info("MW::newCustomer(" + id + ") OK: " + customerId);
 		return customerId;
@@ -536,8 +547,9 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	// Delete customer from the database. 
 	@Override
-	public boolean deleteCustomer(int id, int customerId) {
+	public boolean deleteCustomer(int id, int customerId) throws DeadlockException {
 		Trace.info("MW::deleteCustomer(" + id + ", " + customerId + ") called.");
+		//Write lock on customer
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
 		if (cust == null) {
@@ -567,6 +579,10 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 					}
 				}
 			}
+			// Add action to txn History
+			ItemHistory backup = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.DELETED, cust);
+			addHistory(id, backup);
+			
 			// Remove the customer from the storage.
 			removeData(id, cust.getKey());
 			Trace.info("MW::deleteCustomer(" + id + ", " + customerId + ") OK.");
@@ -577,9 +593,10 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Return data structure containing customer reservation info. 
 	// Returns null if the customer doesn't exist. 
 	// Returns empty RMMap if customer exists but has no reservations.
-	public RMMap getCustomerReservations(int id, int customerId) {
+	public RMMap getCustomerReservations(int id, int customerId) throws DeadlockException {
 		Trace.info("MW::getCustomerReservations(" + id + ", " 
 				+ customerId + ") called.");
+		// Read lock on customer
 		lm.Lock(id, "customer_" + customerId, LockManager.READ);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
 		if (cust == null) {
@@ -593,8 +610,9 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	// Return a bill.
 	@Override
-	public String queryCustomerInfo(int id, int customerId) {
+	public String queryCustomerInfo(int id, int customerId) throws DeadlockException {
 		Trace.info("MW::queryCustomerInfo(" + id + ", " + customerId + ") called.");
+		// Read lock on customer
 		lm.Lock(id, "customer_" + customerId, LockManager.READ);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
 		if (cust == null) {
@@ -620,7 +638,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	}
 	// Add flight reservation to this customer.  
 	@Override
-	public boolean reserveFlight(int id, int customerId, int flightNumber) {
+	public boolean reserveFlight(int id, int customerId, int flightNumber) throws DeadlockException {
 		// Read customer object if it exists (and read lock it).
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -643,7 +661,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	// Add car reservation to this customer. 
 	@Override
-	public boolean reserveCar(int id, int customerId, String location) {
+	public boolean reserveCar(int id, int customerId, String location) throws DeadlockException {
 		// Read customer object if it exists (and read lock it).
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -666,7 +684,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	// Add room reservation to this customer. 
 	@Override
-	public boolean reserveRoom(int id, int customerId, String location) {
+	public boolean reserveRoom(int id, int customerId, String location) throws DeadlockException {
 		// Read customer object if it exists (and read lock it).
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -690,7 +708,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	// Reserve an itinerary.
 	@Override
-	public boolean reserveItinerary(int id, int customerId, Vector	 flightNumbers, String location, boolean car, boolean room) {
+	public boolean reserveItinerary(int id, int customerId, Vector	 flightNumbers, String location, boolean car, boolean room) throws DeadlockException {
 		Trace.info("MW::reserve itinerary");
 		for (Object element: flightNumbers) {
 			int flightNumber;
@@ -779,20 +797,56 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
     /* Attempt to commit the given transaction; return true upon success. */
 	@Override
 	public boolean commit(int transactionId) {
-		// TODO Auto-generated method stub
-		return false;
+		// Delete this txn from txnHistory since we know we won't abort anymore
+		txnHistory.remove(transactionId);
+		//TODO: remove txn history on other resource managers when we work on distributed version
+		
+		// Unlock all locks that this txn has locks on
+		lm.UnlockAll(transactionId);
+		return true;
 	}
     /* Abort the given transaction */
 	@Override
 	public boolean abort(int transactionId) {
-		// TODO Auto-generated method stub
-		return false;
+		// Revert changes
+		Vector<ItemHistory> history = txnHistory.get(transactionId);
+		if (history != null) {
+			for (ItemHistory item : history) {
+				if (item.getAction()==ItemHistory.Action.ADDED) {
+					// Delete item from storage
+					removeData(transactionId, ((Customer)item.getItem()).getKey());
+				} else if (item.getAction()==ItemHistory.Action.DELETED) {
+					// Add back to storage
+					writeData(transactionId, ((Customer)item.getItem()).getKey(), ((Customer)item.getItem()));
+				} else {
+					// Item was updated. Revert back to old version
+					// TODO: make customer cloneable so we can clone a version of customer before it was modified, and save it as backup
+				}
+			}
+		}
+		// TODO: abort on other resource managers
+		
+		// Unlock all locks that this txn has locks on
+		lm.UnlockAll(transactionId);
+		
+		return true;
 	}
     /* Shut down gracefully */
 	@Override
 	public boolean shutdown() {
 		// TODO Auto-generated method stub
 		return false;
+	}
+	
+	private void addHistory(int txnId, ItemHistory item) {
+		if (!txnHistory.contains(txnId)) {
+			Vector<ItemHistory> v = new Vector<ItemHistory>();
+			v.add(item);
+			txnHistory.put(txnId, v);
+		} else {
+			Vector<ItemHistory> v = txnHistory.get(txnId);
+			v.add(item);
+		}
 	}
 
 }

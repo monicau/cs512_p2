@@ -556,6 +556,72 @@ public class Client extends WSClient {
                 }
                 break;
                 
+            case 23:  //Start txn
+                if (arguments.size() != 1) {
+                    wrongNumber();
+                    break;
+                }
+                System.out.println("Starting a transaction.");
+                try {
+                    int tid = useWebService ? proxy.start() : -1;
+                    System.out.println("new transaction id: " + tid);
+                }
+                catch(Exception e) {
+                    System.out.println("EXCEPTION: ");
+                    System.out.println(e.getMessage());
+                    e.printStackTrace();
+                }
+                break;
+            case 24:  //Commit txn
+                if (arguments.size() != 2) {
+                    wrongNumber();
+                    break;
+                }
+                System.out.println("Committing transaction.");
+                try {
+                	int tid = getInt(arguments.elementAt(1));
+                    boolean r = useWebService ? proxy.commit(tid) : false;
+                    System.out.println("commit result: " + r);
+                }
+                catch(Exception e) {
+                    System.out.println("EXCEPTION: ");
+                    System.out.println(e.getMessage());
+                    e.printStackTrace();
+                }
+                break;
+            case 25:  //Abort txn
+                if (arguments.size() != 2) {
+                    wrongNumber();
+                    break;
+                }
+                System.out.println("Aborting transaction.");
+                try {
+                	int tid = getInt(arguments.elementAt(1));
+                    boolean r = useWebService ? proxy.abort(tid) : false;
+                    System.out.println("abort result: " + r);
+                }
+                catch(Exception e) {
+                    System.out.println("EXCEPTION: ");
+                    System.out.println(e.getMessage());
+                    e.printStackTrace();
+                }
+                break;
+            case 26:  //Shutdown
+                if (arguments.size() != 1) {
+                    wrongNumber();
+                    break;
+                }
+                System.out.println("Shutting down.");
+                try {
+                    boolean r = useWebService ? proxy.shutdown() : false;
+                    System.out.println("shut down result: " + r);
+                }
+                catch(Exception e) {
+                    System.out.println("EXCEPTION: ");
+                    System.out.println(e.getMessage());
+                    e.printStackTrace();
+                }
+                break;
             default:
                 System.out.println("The interface does not support this command.");
                 break;
@@ -620,6 +686,14 @@ public class Client extends WSClient {
             return 21;
         else if (argument.compareToIgnoreCase("newcustomerid") == 0)
             return 22;
+        else if (argument.compareToIgnoreCase("start") == 0)
+            return 23;
+        else if (argument.compareToIgnoreCase("commit") == 0)
+            return 24;
+        else if (argument.compareToIgnoreCase("abort") == 0)
+            return 25;
+        else if (argument.compareToIgnoreCase("shutdown") == 0)
+            return 26;
         else
             return 666;
     }
@@ -632,6 +706,7 @@ public class Client extends WSClient {
         System.out.println("deletecustomer\nqueryflight\nquerycar\nqueryroom\nquerycustomer");
         System.out.println("queryflightprice\nquerycarprice\nqueryroomprice");
         System.out.println("reserveflight\nreservecar\nreserveroom\nitinerary");
+        System.out.println("start\ncommit\nabort\nshutdown");
         System.out.println("quit");
         System.out.println("\ntype help, <commandname> for detailed info (note the use of comma).");
     }
@@ -817,7 +892,39 @@ public class Client extends WSClient {
             System.out.println("\nUsage: ");
             System.out.println("\tnewcustomerid, <id>, <customerid>");
             break;
-
+            
+            case 23: //start txn
+            	System.out.println("Start a transaction");
+            	System.out.println("Purpose: ");
+            	System.out.println("\tCreates a new transaction ID");
+            	System.out.println("\nUsage: ");
+            	System.out.println("\tstart");
+            break;
+            
+            case 24:  //commit txn
+                System.out.println("Commit transaction");
+                System.out.println("Purpose: ");
+                System.out.println("\tCommits transaction");
+                System.out.println("\nUsage: ");
+                System.out.println("\tcommit, <txn_id>");
+            break;
+            
+            case 25:  //abort txn
+                System.out.println("Abort transaction");
+                System.out.println("Purpose: ");
+                System.out.println("\tAborts transaction");
+                System.out.println("\nUsage: ");
+                System.out.println("\tabort, <txn_id>");
+            break;
+            
+            case 26:  //shuts down
+                System.out.println("Shuts down");
+                System.out.println("Purpose: ");
+                System.out.println("\tShuts down");
+                System.out.println("\nUsage: ");
+                System.out.println("\tshutdown");
+            break;
+            
             default:
             System.out.println(command);
             System.out.println("The interface does not support this command.");

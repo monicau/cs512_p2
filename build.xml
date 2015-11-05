@@ -24,7 +24,7 @@
     <property name="service.rm3.host" value="localhost"/>
     <property name="service.rm3.port" value="8090"/>
     
-    <property name="service.type" value="tcp" />
+    <property name="service.type" value="ws" />
 	
     <path id="jaxws.classpath">
         <pathelement location="${java.home}/../lib/tools.jar"/>

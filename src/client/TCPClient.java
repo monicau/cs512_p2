@@ -311,4 +311,28 @@ public class TCPClient extends TCPServiceRequest implements ResourceManager{
 		return false;
 	}
 
+	@Override
+	public int start() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public boolean commit(int transactionId) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean abort(int transactionId) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean shutdown() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
 }
