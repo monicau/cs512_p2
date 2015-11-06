@@ -118,7 +118,7 @@ public interface ResourceManager {
     
     /* Create a new customer with the provided identifier. */
     @WebMethod
-    public boolean newCustomerId(int id, int customerId);
+    public boolean newCustomerId(int id, int customerId) throws DeadlockException;
 
     /* Remove this customer and all their associated reservations. */
     @WebMethod

@@ -517,7 +517,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 					String.valueOf(Calendar.getInstance().get(Calendar.MILLISECOND)) +
 					String.valueOf(Math.round(Math.random() * 100 + 1)));
 		}
-		//Write lock on new customer
+		//Lock on new customer
 		lm.Lock(id, "customer_" + customerId, LockManager.READ);
 		Customer cust = new Customer(customerId);
 		
@@ -532,12 +532,18 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	// This method makes testing easier.
 	@Override
-	public boolean newCustomerId(int id, int customerId) {
+	public boolean newCustomerId(int id, int customerId) throws DeadlockException {
 		Trace.info("INFO: MW::newCustomer(" + id + ", " + customerId + ") called.");
+		//Lock on new customer
+		lm.Lock(id, "customer_" + customerId, LockManager.READ);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
 		if (cust == null) {
+			//Create customer and save to storage
 			cust = new Customer(customerId);
 			writeData(id, cust.getKey(), cust);
+			//Add customer to txn history
+			ItemHistory backup = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.ADDED, cust);
+			addCustomerHistory(id, backup);
 			Trace.info("INFO: MW::newCustomer(" + id + ", " + customerId + ") OK.");
 			return true;
 		} else {
@@ -680,6 +686,10 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		//Save reservation info to resource manager
 		boolean result = proxyCar.reserveItem("car", id, -1, location);
 		if (result == true) {
+			//Create a backup of customer and reservation before modifying it
+			ItemHistory backupCustomer = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.UPDATED, cust);
+			addCustomerHistory(id, backupCustomer);
+			addReservationHistory(id, "car-" + location);
 			//Save reservation info to customer object
 			cust.reserve(Car.getKey(location), location, proxyCar.getPrice(id, Car.getKey(location)));
 			writeData(id, cust.getKey(), cust);
@@ -703,6 +713,10 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		//Save reservation info to resource manager
 		boolean result = proxyRoom.reserveItem("room", id, -1, location);
 		if (result == true) {
+			//Create a backup of customer and reservation before modifying it
+			ItemHistory backupCustomer = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.UPDATED, cust);
+			addCustomerHistory(id, backupCustomer);
+			addReservationHistory(id, "room-" + location);
 			//Save reservation info to customer object
 			cust.reserve(Room.getKey(location), location, proxyRoom.getPrice(id, Room.getKey(location)));
 			writeData(id, cust.getKey(), cust);

@@ -865,7 +865,7 @@ public class Client extends WSClient {
             System.out.println("Purpose: ");
             System.out.println("\tReserve a given number of rooms for a customer at a particular location.");
             System.out.println("\nUsage: ");
-            System.out.println("\treserveroom, <id>, <customerid>, <location>, <nummberofrooms>");
+            System.out.println("\treserveroom, <id>, <customerid>, <location>");
             break;
             
             case 20:  //reserve an Itinerary
