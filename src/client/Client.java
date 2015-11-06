@@ -875,7 +875,7 @@ public class Client extends WSClient {
             System.out.println("\nUsage: ");
             System.out.println("\titinerary, <id>, <customerid>, "
                     + "<flightnumber1>....<flightnumberN>, "
-                    + "<LocationToBookcarsOrrooms>, <NumberOfcars>, <NumberOfroom>");
+                    + "<LocationToBookcarsOrrooms>, <Car?>, <Room?>");
             break;
             
 

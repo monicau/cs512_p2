@@ -728,7 +728,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	// Reserve an itinerary.
 	@Override
-	public boolean reserveItinerary(int id, int customerId, Vector	 flightNumbers, String location, boolean car, boolean room) throws DeadlockException {
+	public boolean reserveItinerary(int id, int customerId, Vector flightNumbers, String location, boolean car, boolean room) throws DeadlockException {
 		Trace.info("MW::reserve itinerary");
 		for (Object element: flightNumbers) {
 			int flightNumber;
@@ -760,14 +760,20 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 				reserveCarResult = reserveCar(id, customerId, location);
 			}
 			//return false now if reserving car failed
-			if (reserveCarResult == false) return false;
+			if (reserveCarResult == false) {
+				//Unreserve car at customer object
+				rollback(id, customerId, flightNumbers, location, car, false);
+				return false;
+			}
 		}
 		if (room) {
 			Trace.info("MW::Reserving room at" + location);
 			boolean reserveRoomResult = reserveRoom(id, customerId, location);
 			if (reserveRoomResult == false && car) {
-				//Cancel car reservation and return false
+				//Cancel car reservation
 				proxyCar.rmUnreserve(id, Car.getKey(location), 1);
+				//Unreserve both car and room from customer
+				rollback(id, customerId, flightNumbers, location, car, room);
 				return false;
 			}
 		}
@@ -801,9 +807,9 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 					proxyFlight.rmUnreserve(id, Flight.getKey(flightNum), 1);
 				}
 			}
+			rollback(id, customerId, flightNumbers, location, car, room);
 			return false;
 		}
-
 		return true;
 	}
 	
@@ -858,6 +864,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 							c.unreserve(key);
 						}
 					}
+					//Save updated customer object to storage
 					writeData(transactionId, c.getKey(), c);
 				}
 			}
@@ -895,6 +902,33 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			Vector<String> v = reservationHistory.get(txnId);
 			v.add(key);
 		}
+	}
+	//Not sponsored by walmart
+	private void rollback(int txnId, int customerId, Vector flightNumbers, String location, boolean car, boolean room) {
+		Vector<ItemHistory> items = txnHistory.get(txnId);
+		for (ItemHistory item : items) {
+			Customer cust = ((Customer)item.getItem());
+			if (cust.getId()==customerId) {
+				//Delete customer object from storage
+				removeData(txnId, cust.getKey());
+				//Rollback!
+				for (Object element : flightNumbers) {
+					String flightNumberString= (String) element;
+					int flightNumber = Integer.parseInt(flightNumberString);
+					cust.unreserve("flight-"+flightNumberString);
+				}
+				//Rollback car and room if they were reserved
+				if (car) {
+					cust.unreserve("car-"+location);
+				}
+				if (room) {
+					cust.unreserve("room-"+location);
+				}
+				//Save updated customer object to storage
+				writeData(txnId, cust.getKey(), cust);
+			}
+		}
+		
 	}
 }
 
