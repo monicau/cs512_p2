@@ -30,6 +30,7 @@ import com.google.gson.Gson;
 public class ResourceManagerImpl implements server.ws.ResourceManager {
 	private String MW_LOCATION = "localhost";
 	private int txnCounter;
+	private Vector<Integer> completedTransactions;
 
 	boolean useWebService;
 	
@@ -37,6 +38,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	
 	public ResourceManagerImpl() {
 		txnCounter = 0;
+		completedTransactions = new Vector<Integer>();
 		//Determine if we are using web services or tcp
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(new File("serviceType.txt")));

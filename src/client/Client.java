@@ -3,6 +3,8 @@ package client;
 import java.util.*;
 import java.io.*;
 
+import lockmanager.DeadlockException;
+
 
 public class Client extends WSClient {
 

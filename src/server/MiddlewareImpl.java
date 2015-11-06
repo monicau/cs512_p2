@@ -58,6 +58,8 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	ResourceManagerImplService service;
 	boolean useWebService;
 	Hashtable<Integer, Vector<ItemHistory>> txnHistory;
+	Hashtable<Integer, Vector<String>> reservationHistory;
+	
 	private int txnCounter;
 	private LockManager lm;
 
@@ -75,6 +77,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		System.out.println("Starting middleware");
 		txnCounter = 0;
 		txnHistory = new Hashtable<Integer, Vector<ItemHistory>>();
+		reservationHistory = new Hashtable<Integer, Vector<String>>();
 		lm = new LockManager();
 		//Determine if we are using web services or tcp
 		try {
@@ -375,8 +378,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Note: if flightPrice <= 0 and the flight already exists, it maintains 
 	// its current price.
 	@Override
-	public boolean addFlight(int id, int flightNumber, 
-			int numSeats, int flightPrice) {
+	public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice)  {
 		Trace.info("MW::addFlight(" + id + ", " + flightNumber 
 				+ ", $" + flightPrice + ", " + numSeats + ") called.");
 		boolean returnValue = proxyFlight.addFlight(id, flightNumber, numSeats, flightPrice);
@@ -516,12 +518,12 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 					String.valueOf(Math.round(Math.random() * 100 + 1)));
 		}
 		//Write lock on new customer
-		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
+		lm.Lock(id, "customer_" + customerId, LockManager.READ);
 		Customer cust = new Customer(customerId);
 		
 		//Add customer to txn history
 		ItemHistory backup = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.ADDED, cust);
-		addHistory(id, backup);
+		addCustomerHistory(id, backup);
 		
 		writeData(id, cust.getKey(), cust);
 		Trace.info("MW::newCustomer(" + id + ") OK: " + customerId);
@@ -581,7 +583,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			}
 			// Add action to txn History
 			ItemHistory backup = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.DELETED, cust);
-			addHistory(id, backup);
+			addCustomerHistory(id, backup);
 			
 			// Remove the customer from the storage.
 			removeData(id, cust.getKey());
@@ -651,6 +653,10 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		//Save reservation info to resource manager
 		boolean result = proxyFlight.reserveItem("flight", id, flightNumber, null);
 		if (result == true) {
+			//Create a backup of customer and reservation before modifying it
+			ItemHistory backupCustomer = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.UPDATED, cust);
+			addCustomerHistory(id, backupCustomer);
+			addReservationHistory(id, "flight-" + flightNumber);
 			//Save reservation info to customer object
 			cust.reserve(Flight.getKey(flightNumber), String.valueOf(flightNumber), proxyFlight.getPrice(id, Flight.getKey(flightNumber)));
 			writeData(id, cust.getKey(), cust);
@@ -790,45 +796,63 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
     /* Start a new transaction and return its id. */
 	@Override
 	synchronized public int start() {
+		System.out.println("MW:: Start a transaction.");
 		int temp = txnCounter;
 		txnCounter++;
+		System.out.println("MW:: Generated and return transaction number " + temp);
 		return temp;
 	}
     /* Attempt to commit the given transaction; return true upon success. */
 	@Override
 	public boolean commit(int transactionId) {
+		System.out.println("MW:: Committing transaction "+transactionId);
 		// Delete this txn from txnHistory since we know we won't abort anymore
 		txnHistory.remove(transactionId);
 		//TODO: remove txn history on other resource managers when we work on distributed version
 		
 		// Unlock all locks that this txn has locks on
-		lm.UnlockAll(transactionId);
+		boolean r = lm.UnlockAll(transactionId);
+		System.out.println("MW:: Unlock all locks held by this transaction: " + r);
 		return true;
 	}
     /* Abort the given transaction */
 	@Override
 	public boolean abort(int transactionId) {
+		System.out.println("MW:: Aborting a transaction " + transactionId);
 		// Revert changes
 		Vector<ItemHistory> history = txnHistory.get(transactionId);
 		if (history != null) {
+			System.out.println("MW:: Reverting changes...");
 			for (ItemHistory item : history) {
 				if (item.getAction()==ItemHistory.Action.ADDED) {
 					// Delete item from storage
+					System.out.println("MW:: Deleting added customer.");
 					removeData(transactionId, ((Customer)item.getItem()).getKey());
 				} else if (item.getAction()==ItemHistory.Action.DELETED) {
 					// Add back to storage
+					System.out.println("MW:: Adding a deleted customer.");
 					writeData(transactionId, ((Customer)item.getItem()).getKey(), ((Customer)item.getItem()));
 				} else {
 					// Item was updated. Revert back to old version
-					// TODO: make customer cloneable so we can clone a version of customer before it was modified, and save it as backup
+					System.out.println("MW:: Reverting customer to its old stats");
+					removeData(transactionId, ((Customer)item.getItem()).getKey());
+					//Remove reservation(s) from customer object
+					Customer c = (Customer) item.getItem();
+					Vector<String> reservations = reservationHistory.get(transactionId);
+					if (reservations!=null) {
+						for (String key : reservations) {
+							c.unreserve(key);
+						}
+					}
+					writeData(transactionId, c.getKey(), c);
 				}
 			}
 		}
 		// TODO: abort on other resource managers
 		
 		// Unlock all locks that this txn has locks on
-		lm.UnlockAll(transactionId);
-		
+		boolean r = lm.UnlockAll(transactionId);
+		System.out.println("MW:: Unlock all held locks:" + r);
 		return true;
 	}
     /* Shut down gracefully */
@@ -838,7 +862,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		return false;
 	}
 	
-	private void addHistory(int txnId, ItemHistory item) {
+	private void addCustomerHistory(int txnId, ItemHistory item) {
 		if (!txnHistory.contains(txnId)) {
 			Vector<ItemHistory> v = new Vector<ItemHistory>();
 			v.add(item);
@@ -848,6 +872,15 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			v.add(item);
 		}
 	}
-
+	private void addReservationHistory(int txnId, String key) {
+		if (!reservationHistory.contains(txnId)) {
+			Vector<String> v = new Vector<String>();
+			v.add(key);
+			reservationHistory.put(txnId, v);
+		} else {
+			Vector<String> v = reservationHistory.get(txnId);
+			v.add(key);
+		}
+	}
 }
 
