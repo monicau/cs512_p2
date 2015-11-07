@@ -885,7 +885,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	}
 	
 	private void addCustomerHistory(int txnId, ItemHistory item) {
-		if (!txnHistory.contains(txnId)) {
+		if (!txnHistory.containsKey(txnId)) {
 			Vector<ItemHistory> v = new Vector<ItemHistory>();
 			v.add(item);
 			txnHistory.put(txnId, v);
@@ -904,7 +904,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			v.add(key);
 		}
 	}
-	//Not sponsored by walmart 
+	//Not sponsored by walmart. Rolls back customer's info on what it has reserved
 	private void rollback(int txnId, int customerId, Vector flightNumbers, String location, boolean car, boolean room) {
 		System.out.println("MW:: ROLLBACK!  Car:"+car + ", Room:" + room);
 		Vector<ItemHistory> items = txnHistory.get(txnId);
