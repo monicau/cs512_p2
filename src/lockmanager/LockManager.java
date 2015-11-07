@@ -65,6 +65,7 @@ public class LockManager
                             // *** ADD CODE HERE *** to carry out the lock conversion in the
                             // lock table
                         	//convert lock to WRITE for dataObj and txnObj
+                        	System.out.println("LOCK CONVERSION TIME!");
                         	Vector v = this.lockTable.elements(trxnObj);
                         	for (int i=0; i<v.size(); i++) {
                         		TrxnObj o = (TrxnObj) v.elementAt(i);
@@ -90,7 +91,9 @@ public class LockManager
                 }
                 if (bConflict) {
                     // lock conflict exists, wait
+                	System.out.println(xid + " sleeping..");
                     WaitLock(dataObj);
+                    System.out.println(xid + " woken up!");
                 }
             }
         } 
@@ -146,11 +149,12 @@ public class LockManager
                                 
                                 // remove interrupted thread from waitTable only if no
                                 // other transaction has locked this data item
-                                if (vect1.size () == 0) {
-                                    this.waitTable.remove(waitObj);     
-                                    
+                                System.out.println("Want to give write lock to this thread, but must check if other txns have lock on this object..");
+                                if (vect1.size () == 0 || (vect1.size()==1 && (vect1.elementAt(0)).hashCode()==dataObj.hashCode())) {
+                                    this.waitTable.remove(waitObj);
                                     try {
                                         synchronized (waitObj.getThread())    {
+                                        	System.out.println("WAKE UP!");
                                             waitObj.getThread().notify();
                                         }    
                                     }
@@ -162,6 +166,11 @@ public class LockManager
                                     // some other transaction still has a lock on
                                     // the data item just unlocked. So, WRITE lock
                                     // cannot be granted.
+                                	System.out.println("Someone has lock! Write lock not given! boohoo\nThese txn(s) have locks on it:");
+                                	for (int k=0; k<vect1.size(); k++) {
+                                		DataObj d = (DataObj) vect1.elementAt(k);
+                                		System.out.println(d.toString());
+                                	}
                                     break;
                                 }
                             }
@@ -243,7 +252,7 @@ public class LockManager
                 } else if (dataObj.getLockType() == DataObj.WRITE) {
                     // transaction is requesting a WRITE lock and some other transaction has either
                     // a READ or a WRITE lock on it ==> conflict
-                    System.out.println("Want WRITE, someone has READ or WRITE");
+                    System.out.println("Want WRITE, someone has READ or WRITE:" + dataObj2.toString());
                     return true;
                 }
             }

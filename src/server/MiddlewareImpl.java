@@ -689,7 +689,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			//Create a backup of customer and reservation before modifying it
 			ItemHistory backupCustomer = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.UPDATED, cust);
 			addCustomerHistory(id, backupCustomer);
-			addReservationHistory(id, "car-" + location);
+			addReservationHistory(id, Car.getKey(location));
 			//Save reservation info to customer object
 			cust.reserve(Car.getKey(location), location, proxyCar.getPrice(id, Car.getKey(location)));
 			writeData(id, cust.getKey(), cust);
@@ -716,7 +716,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			//Create a backup of customer and reservation before modifying it
 			ItemHistory backupCustomer = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.UPDATED, cust);
 			addCustomerHistory(id, backupCustomer);
-			addReservationHistory(id, "room-" + location);
+			addReservationHistory(id, Room.getKey(location));
 			//Save reservation info to customer object
 			cust.reserve(Room.getKey(location), location, proxyRoom.getPrice(id, Room.getKey(location)));
 			writeData(id, cust.getKey(), cust);
@@ -754,7 +754,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		}
 		//Now try to reserve all the items
 		if (car) {
-			Trace.info("MW::Reserving car at" + location);
+			Trace.info("MW::Reserving car at " + location);
 			boolean reserveCarResult = false;
 			if(useWebService) {
 				reserveCarResult = reserveCar(id, customerId, location);
@@ -767,7 +767,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			}
 		}
 		if (room) {
-			Trace.info("MW::Reserving room at" + location);
+			Trace.info("MW::Reserving room at " + location);
 			boolean reserveRoomResult = reserveRoom(id, customerId, location);
 			if (reserveRoomResult == false && car) {
 				//Cancel car reservation
@@ -861,6 +861,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 					Vector<String> reservations = reservationHistory.get(transactionId);
 					if (reservations!=null) {
 						for (String key : reservations) {
+							System.out.println("MW::Abort() unreserving " + key);
 							c.unreserve(key);
 						}
 					}
@@ -894,7 +895,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		}
 	}
 	private void addReservationHistory(int txnId, String key) {
-		if (!reservationHistory.contains(txnId)) {
+		if (!reservationHistory.containsKey(txnId)) {
 			Vector<String> v = new Vector<String>();
 			v.add(key);
 			reservationHistory.put(txnId, v);
@@ -903,10 +904,13 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			v.add(key);
 		}
 	}
-	//Not sponsored by walmart
+	//Not sponsored by walmart 
 	private void rollback(int txnId, int customerId, Vector flightNumbers, String location, boolean car, boolean room) {
+		System.out.println("MW:: ROLLBACK!  Car:"+car + ", Room:" + room);
 		Vector<ItemHistory> items = txnHistory.get(txnId);
+		Vector<String> reservations = reservationHistory.get(txnId);
 		for (ItemHistory item : items) {
+			//We know here in MW that all items are Customer objects
 			Customer cust = ((Customer)item.getItem());
 			if (cust.getId()==customerId) {
 				//Delete customer object from storage
@@ -919,10 +923,12 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 				}
 				//Rollback car and room if they were reserved
 				if (car) {
-					cust.unreserve("car-"+location);
+					System.out.println("MW:: Unreserving car-"+location + " for customer " + cust.getKey());
+					cust.unreserve("car-" + location);
 				}
 				if (room) {
-					cust.unreserve("room-"+location);
+					System.out.println("MW:: Unreserving room-"+location + " for customer " + cust.getKey());
+					cust.unreserve("room-" + location);
 				}
 				//Save updated customer object to storage
 				writeData(txnId, cust.getKey(), cust);
