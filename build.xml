@@ -95,7 +95,7 @@
                 destdir="${basedir}/build/classes"
                 srcdir="${basedir}/src"
                 includes="server/**"
-                excludes="server/MiddlewareImpl*"
+                excludes="server/MiddlewareImpl*,server/TransactionManager*"
                 sourceDestDir="${basedir}/build/classes"
                 procOnly="false"
                 sourcepath="${basedir}/src">

@@ -23,21 +23,27 @@ import java.util.function.Consumer;
 
 import javax.jws.WebService;
 
+import server.ItemHistory.ItemType;
+import lockmanager.DeadlockException;
+import lockmanager.LockManager;
+
 import com.google.gson.Gson;
 
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {
 	private String MW_LOCATION = "localhost";
-	private int txnCounter;
+	private RMMap<Integer, Vector<ItemHistory>> txnHistory;
 	private Vector<Integer> completedTransactions;
+	private LockManager lm;
 
 	boolean useWebService;
 	
 	AtomicReference<Messenger> messenger_ref = new AtomicReference<>();
 	
 	public ResourceManagerImpl() {
-		txnCounter = 0;
+		lm = new LockManager();
+		txnHistory = new RMMap<Integer, Vector<ItemHistory>>();
 		completedTransactions = new Vector<Integer>();
 		//Determine if we are using web services or tcp
 		try {
@@ -470,22 +476,29 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
      * @param flightNumber	flight number if applicable
      * @param location		car or room location if applicable
      * @return				true if success, else false
+     * @throws DeadlockException 
      */
     // Add reservation  
     @Override
-    public boolean reserveItem(String reserveType, int id, int flightNumber, String location) {
+    public boolean reserveItem(String reserveType, int id, int flightNumber, String location) throws DeadlockException {
     	String key = null;
+    	ItemType itemType;
     	if (reserveType.toLowerCase().equals("flight")) {
     		location = String.valueOf(flightNumber);        
     		key = Flight.getKey(flightNumber);
+    		itemType = ItemHistory.ItemType.FLIGHT;
         } else if (reserveType.toLowerCase().equals("car")) {
         	key = Car.getKey(location);
+        	itemType = ItemHistory.ItemType.CAR;
         } else if (reserveType.toLowerCase().equals("room")) {
         	key = Room.getKey(location);
+        	itemType = ItemHistory.ItemType.ROOM;
         } else {
         	return false;
         }
     	if (key==null) return false;
+    	// Write lock item
+    	lm.Lock(id, key, LockManager.WRITE);
     	// Check if the item is available.
         ReservableItem item = (ReservableItem) readData(id, key);
         if (item == null) {
@@ -501,6 +514,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	            item.setCount(item.getCount() - 1);
 	            item.setReserved(item.getReserved() + 1);
         	}
+        	// Add to txn history
+        	ItemHistory history = new ItemHistory(itemType, ItemHistory.Action.RESERVED, item, key);
+        	addTxnHistory(id, history);
             Trace.warn("RM::rmReserve(" + reserveType + ", " + id + ", " + Integer.toString(flightNumber) + ", " + location + ") OK.");
             return true;
         }
@@ -511,9 +527,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
      * @param key				reserved item's key
      * @param reservationCount	number of reservations for this item
      * @return					true if successful, else false
+     * @throws DeadlockException 
      */
     // Removes a reservation
-    public boolean rmUnreserve(int id, String key, int reservationCount) {
+    public boolean rmUnreserve(int id, String key, int reservationCount) throws DeadlockException {
+    	lm.Lock(id, key, LockManager.WRITE);
     	ReservableItem item = (ReservableItem) readData(id, key);
     	if (item == null) {
     		Trace.info("RM:: Cannot unreserve item, it does not exist: " + key);
@@ -524,6 +542,17 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         Trace.info("RM:: item unreserved. Reserved count is now " + item.getReserved() + ", available count is now " + item.getCount());
 		return true;
     }
+    
+    private void addTxnHistory(int txnId, ItemHistory item) {
+		Vector<ItemHistory> v = txnHistory.get(txnId);
+		if (v == null) {
+			v = new Vector<ItemHistory>();
+		}
+		v.add(item);
+		txnHistory.put(txnId, v);
+		System.out.println("RM:: added " + item.getReservedItemKey() + " to txnHistory");
+	}
+    
     
     // Add flight reservation to this customer.
     @Override
@@ -554,9 +583,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     /* Start a new transaction and return its id. */
 	@Override
 	synchronized public int start() {
-		int temp = txnCounter;
-		txnCounter++;
-		return temp;
+		return 1;
 	}
     /* Attempt to commit the given transaction; return true upon success. */
 	@Override
@@ -575,5 +602,35 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	public boolean shutdown() {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	@Override
+	public String talk() {
+		return "Hi im an rm";
+	}
+	
+	@Override
+	public void removeTxn(int txnID) {
+		txnHistory.remove(txnID);
+	}
+
+	@Override
+	public boolean unlock(int txnID) {
+		return lm.UnlockAll(txnID);   
+	}
+
+	@Override
+	public RMItem readFromStorage(int id, String key) {
+		return readData(id, key);  
+	}
+
+	@Override
+	public void writeToStorage(int id, String key, RMItem value) {
+		writeData(id, key, value); 
+	}
+
+	@Override
+	public RMItem deleteFromStorage(int id, String key) {
+		return removeData(id, key); 
 	}
 }

@@ -73,7 +73,6 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public MiddlewareImpl(){
 		System.out.println("Starting middleware");
 		lm = new LockManager();
-		tm = new TransactionManager();
 		//Determine if we are using web services or tcp
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(new File("serviceType.txt")));
@@ -134,6 +133,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			} catch (FileNotFoundException e) {
 				Trace.info("ERROR: File not found!");
 			}
+			tm = new TransactionManager(this, proxyFlight, proxyCar, proxyRoom);
 		} 
 		else {
 			// sockets
@@ -572,14 +572,18 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 				//TODO: proxy dis shit
 				//Since we don't know what type of item it is, we will try one proxy at a time
 				Trace.info("MW::Attempting to unreserve " + reservedItem.getKey());
-				if (proxyFlight.rmUnreserve(id, reservedItem.getKey(), reservedItem.getCount()) == false) {
-					Trace.info("MW::unreserving flight failed. Trying car..");
-					if (proxyCar.rmUnreserve(id, reservedItem.getKey(), reservedItem.getCount()) == false) {
-						Trace.info("MW::unreserving car failed. Trying room..");
-						if (proxyRoom.rmUnreserve(id, reservedItem.getKey(), reservedItem.getCount()) == false) {
-							Trace.info("MW::fail to cancel reservation for room too.");
+				try {
+					if (proxyFlight.rmUnreserve(id, reservedItem.getKey(), reservedItem.getCount()) == false) {
+						Trace.info("MW::unreserving flight failed. Trying car..");
+						if (proxyCar.rmUnreserve(id, reservedItem.getKey(), reservedItem.getCount()) == false) {
+							Trace.info("MW::unreserving car failed. Trying room..");
+							if (proxyRoom.rmUnreserve(id, reservedItem.getKey(), reservedItem.getCount()) == false) {
+								Trace.info("MW::fail to cancel reservation for room too.");
+							}
 						}
 					}
+				} catch (Exception ex) {
+					throw new DeadlockException(id, ex.getMessage());
 				}
 			}
 			// Add action to txn History
@@ -632,11 +636,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	}
 
 	//Method for resource manager only.
-	public boolean reserveItem(String reserveType, int id, int flightNumber, String location) {
+	public boolean reserveItem(String reserveType, int id, int flightNumber, String location) throws DeadlockException {
 		return false;
 	}
 	//Method for resource manager only.
-	public boolean rmUnreserve(int id, String key, int reservationCount) {
+	public boolean rmUnreserve(int id, String key, int reservationCount) throws DeadlockException{
 		return false;
 	}
 	// Add flight reservation to this customer.  
@@ -652,13 +656,22 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		//Reserve!
 
 		//Save reservation info to resource manager
-		boolean result = proxyFlight.reserveItem("flight", id, flightNumber, null);
+		boolean result;
+		try {
+			result = proxyFlight.reserveItem("flight", id, flightNumber, null);
+		} catch (Exception e) {
+			throw new DeadlockException(id, e.getMessage());
+		}
 		if (result == true) {
 			//Create a backup of customer and reservation before modifying it
 			ItemHistory backupCustomer = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.RESERVED, cust, "flight-"+flightNumber);
 			addCustomerHistory(id, backupCustomer);
 			//Save reservation info to customer object
-			cust.reserve(Flight.getKey(flightNumber), String.valueOf(flightNumber), proxyFlight.getPrice(id, Flight.getKey(flightNumber)));
+			try {
+				cust.reserve(Flight.getKey(flightNumber), String.valueOf(flightNumber), proxyFlight.getPrice(id, Flight.getKey(flightNumber)));
+			} catch (Exception e) {
+				throw new DeadlockException(id, e.getMessage());
+			}
 			writeData(id, cust.getKey(), cust);
 		}
 		Trace.warn("MW::reserveFlight succeeded: " + result);
@@ -678,13 +691,22 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		//Reserve!
 
 		//Save reservation info to resource manager
-		boolean result = proxyCar.reserveItem("car", id, -1, location);
+		boolean result;
+		try {
+			result = proxyCar.reserveItem("car", id, -1, location);
+		} catch (Exception e) {
+			throw new DeadlockException(id, e.getMessage());
+		}
 		if (result == true) {
 			//Create a backup of customer and reservation before modifying it
 			ItemHistory backupCustomer = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.RESERVED, cust, Car.getKey(location));
 			addCustomerHistory(id, backupCustomer);
 			//Save reservation info to customer object
-			cust.reserve(Car.getKey(location), location, proxyCar.getPrice(id, Car.getKey(location)));
+			try {
+				cust.reserve(Car.getKey(location), location, proxyCar.getPrice(id, Car.getKey(location)));
+			} catch (Exception e) {
+				throw new DeadlockException(id, e.getMessage());
+			}
 			writeData(id, cust.getKey(), cust);
 		}
 		Trace.warn("MW::reserveCar succeeded: " + result);
@@ -704,13 +726,22 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		//Reserve!
 
 		//Save reservation info to resource manager
-		boolean result = proxyRoom.reserveItem("room", id, -1, location);
+		boolean result;
+		try {
+			result = proxyRoom.reserveItem("room", id, -1, location);
+		} catch (Exception e) {
+			throw new DeadlockException(id, e.getMessage());
+		}
 		if (result == true) {
 			//Create a backup of customer and reservation before modifying it
 			ItemHistory backupCustomer = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.RESERVED, cust, Room.getKey(location));
 			addCustomerHistory(id, backupCustomer);
 			//Save reservation info to customer object
-			cust.reserve(Room.getKey(location), location, proxyRoom.getPrice(id, Room.getKey(location)));
+			try {
+				cust.reserve(Room.getKey(location), location, proxyRoom.getPrice(id, Room.getKey(location)));
+			} catch (Exception e) {
+				throw new DeadlockException(id, e.getMessage());
+			}
 			writeData(id, cust.getKey(), cust);
 		}
 		Trace.warn("MW::reserveRoom succeeded: " + result);
@@ -763,7 +794,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			boolean reserveRoomResult = reserveRoom(id, customerId, location);
 			if (reserveRoomResult == false && car) {
 				//Cancel car reservation
-				proxyCar.rmUnreserve(id, Car.getKey(location), 1);
+				try {
+					proxyCar.rmUnreserve(id, Car.getKey(location), 1);
+				} catch (Exception e) {
+					throw new DeadlockException(id, e.getMessage());
+				}
 				//Unreserve both car and room from customer
 				rollback(id, customerId, flightNumbers, location, car, room);
 				return false;
@@ -788,15 +823,27 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		if (reserveFlightSuccess == false) {
 			//Roll back any successful car, room and flight reservations 
 			if (car) {
-				proxyCar.rmUnreserve(id, Car.getKey(location), 1);
+				try {
+					proxyCar.rmUnreserve(id, Car.getKey(location), 1);
+				} catch (Exception e) {
+					throw new DeadlockException(id, e.getMessage());
+				}
 			}
 			if (room) {
-				proxyRoom.rmUnreserve(id, Room.getKey(location), 1);
+				try {
+					proxyRoom.rmUnreserve(id, Room.getKey(location), 1);
+				} catch (Exception e) {
+					throw new DeadlockException(id, e.getMessage());
+				}
 			}
 			for (int i=0; i<reserveFlightResult.length; i++) {
 				if (reserveFlightResult[i]==true) {
 					int flightNum = Integer.parseInt((String) flightNumbers.get(i));
-					proxyFlight.rmUnreserve(id, Flight.getKey(flightNum), 1);
+					try {
+						proxyFlight.rmUnreserve(id, Flight.getKey(flightNum), 1);
+					} catch (Exception e) {
+						throw new DeadlockException(id, e.getMessage());
+					}
 				}
 			}
 			rollback(id, customerId, flightNumbers, location, car, room);
@@ -813,15 +860,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
     /* Attempt to commit the given transaction; return true upon success. */
 	@Override
 	public boolean commit(int transactionId) {
-		System.out.println("MW:: Committing transaction "+transactionId);
-		// Delete this txn from txnHistory since we know we won't abort anymore
-		tm.removeTxn(transactionId);
-		//TODO: remove txn history on other resource managers when we work on distributed version
-		
-		// Unlock all locks that this txn has locks on
-		boolean r = lm.UnlockAll(transactionId);
-		System.out.println("MW:: Unlock all locks held by this transaction: " + r);
-		return true;
+		return tm.commit(transactionId);
 	}
     /* Abort the given transaction */
 	@Override
@@ -869,6 +908,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		return false;
 	}
 	
+	
 	private void addCustomerHistory(int txnId, ItemHistory item) {
 		Vector<ItemHistory> v = tm.getTxnHistory(txnId);
 		if (v == null) {
@@ -910,5 +950,35 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		}
 		
 	}
+	
+	@Override
+	public boolean unlock(int txnID) {                                                      
+	       return lm.UnlockAll(txnID);                                                                                                                                                      
+	}        
+	
+	@Override
+	public RMItem readFromStorage(int id, String key) {                                
+        return readData(id, key);                                               
+	}        
+	
+	@Override
+	public void writeToStorage(int id, String key, RMItem value) {                  
+	        writeData(id, key, value);                                              
+	}        
+	
+	@Override
+	public RMItem deleteFromStorage(int id, String key) {                           
+	        return removeData(id, key);                                             
+	}
+	
+	@Override
+	public void removeTxn(int txnID) {
+//		txnHistory.remove(txnID); TODO
+	}
+	
+	@Override
+	public String talk() {
+		return "Hi im middleware";
+	} 
 }
 

@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import server.Messenger;
+import server.RMItem;
 import server.TCPServiceRequest;
 import server.ws.ResourceManager;
 
@@ -333,6 +334,41 @@ public class TCPClient extends TCPServiceRequest implements ResourceManager{
 	public boolean shutdown() {
 		// TODO Auto-generated method stub
 		return false;
+	}
+
+	@Override
+	public String talk() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public boolean unlock(int txnID) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public RMItem readFromStorage(int id, String key) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void writeToStorage(int id, String key, RMItem value) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public RMItem deleteFromStorage(int id, String key) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	@Override
+	public void removeTxn(int txnID) {
+		// TODO Auto-generated method stub
 	}
 
 }

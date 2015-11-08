@@ -21,6 +21,8 @@ import java.util.*;
 import javax.jws.WebService;
 import javax.jws.WebMethod;
 
+import server.Customer;
+import server.RMItem;
 import lockmanager.DeadlockException;
 
 
@@ -130,11 +132,11 @@ public interface ResourceManager {
     
     /* Resource manager's reserve method */
     @WebMethod
-    public boolean reserveItem(String reserveType, int id, int flightNumber, String location);
+    public boolean reserveItem(String reserveType, int id, int flightNumber, String location) throws DeadlockException;
 
     /* Resource manager's unreserve method */
     @WebMethod
-    public boolean rmUnreserve(int id, String key, int reservationCount);
+    public boolean rmUnreserve(int id, String key, int reservationCount) throws DeadlockException;
     
     /* Reserve a seat on this flight. */
     @WebMethod
@@ -168,5 +170,11 @@ public interface ResourceManager {
     /* Shut down gracefully */
     @WebMethod
     public boolean shutdown();
-    			
+
+    public void removeTxn(int txnID);
+	public boolean unlock(int txnID);                                                    
+	public RMItem readFromStorage(int id, String key);                        
+	public void writeToStorage(int id, String key, RMItem value);                 
+	public RMItem deleteFromStorage(int id, String key);                   
+    public String talk();
 }
