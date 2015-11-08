@@ -58,7 +58,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	ResourceManagerImplService service;
 	boolean useWebService;
 	Hashtable<Integer, Vector<ItemHistory>> txnHistory;
-	Hashtable<Integer, Vector<String>> reservationHistory;
+//	Hashtable<Integer, Vector<String>> reservationHistory;
 	
 	private int txnCounter;
 	private LockManager lm;
@@ -77,7 +77,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		System.out.println("Starting middleware");
 		txnCounter = 0;
 		txnHistory = new Hashtable<Integer, Vector<ItemHistory>>();
-		reservationHistory = new Hashtable<Integer, Vector<String>>();
+//		reservationHistory = new Hashtable<Integer, Vector<String>>();
 		lm = new LockManager();
 		//Determine if we are using web services or tcp
 		try {
@@ -522,7 +522,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		Customer cust = new Customer(customerId);
 		
 		//Add customer to txn history
-		ItemHistory backup = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.ADDED, cust);
+		ItemHistory backup = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.ADDED, cust, null);
 		addCustomerHistory(id, backup);
 		
 		writeData(id, cust.getKey(), cust);
@@ -542,7 +542,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			cust = new Customer(customerId);
 			writeData(id, cust.getKey(), cust);
 			//Add customer to txn history
-			ItemHistory backup = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.ADDED, cust);
+			ItemHistory backup = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.ADDED, cust, null);
 			addCustomerHistory(id, backup);
 			Trace.info("INFO: MW::newCustomer(" + id + ", " + customerId + ") OK.");
 			return true;
@@ -588,7 +588,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 				}
 			}
 			// Add action to txn History
-			ItemHistory backup = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.DELETED, cust);
+			ItemHistory backup = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.DELETED, cust, null);
 			addCustomerHistory(id, backup);
 			
 			// Remove the customer from the storage.
@@ -660,9 +660,8 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		boolean result = proxyFlight.reserveItem("flight", id, flightNumber, null);
 		if (result == true) {
 			//Create a backup of customer and reservation before modifying it
-			ItemHistory backupCustomer = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.UPDATED, cust);
+			ItemHistory backupCustomer = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.RESERVED, cust, "flight-"+flightNumber);
 			addCustomerHistory(id, backupCustomer);
-			addReservationHistory(id, "flight-" + flightNumber);
 			//Save reservation info to customer object
 			cust.reserve(Flight.getKey(flightNumber), String.valueOf(flightNumber), proxyFlight.getPrice(id, Flight.getKey(flightNumber)));
 			writeData(id, cust.getKey(), cust);
@@ -687,9 +686,8 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		boolean result = proxyCar.reserveItem("car", id, -1, location);
 		if (result == true) {
 			//Create a backup of customer and reservation before modifying it
-			ItemHistory backupCustomer = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.UPDATED, cust);
+			ItemHistory backupCustomer = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.RESERVED, cust, Car.getKey(location));
 			addCustomerHistory(id, backupCustomer);
-			addReservationHistory(id, Car.getKey(location));
 			//Save reservation info to customer object
 			cust.reserve(Car.getKey(location), location, proxyCar.getPrice(id, Car.getKey(location)));
 			writeData(id, cust.getKey(), cust);
@@ -714,9 +712,8 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		boolean result = proxyRoom.reserveItem("room", id, -1, location);
 		if (result == true) {
 			//Create a backup of customer and reservation before modifying it
-			ItemHistory backupCustomer = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.UPDATED, cust);
+			ItemHistory backupCustomer = new ItemHistory(ItemHistory.ItemType.CUSTOMER, ItemHistory.Action.RESERVED, cust, Room.getKey(location));
 			addCustomerHistory(id, backupCustomer);
-			addReservationHistory(id, Room.getKey(location));
 			//Save reservation info to customer object
 			cust.reserve(Room.getKey(location), location, proxyRoom.getPrice(id, Room.getKey(location)));
 			writeData(id, cust.getKey(), cust);
@@ -856,20 +853,17 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 					// Item was updated. Revert back to old version
 					System.out.println("MW:: Reverting customer to its old stats");
 					removeData(transactionId, ((Customer)item.getItem()).getKey());
-					//Remove reservation(s) from customer object
+					//Remove reservation from customer object
 					Customer c = (Customer) item.getItem();
-					Vector<String> reservations = reservationHistory.get(transactionId);
-					if (reservations!=null) {
-						for (String key : reservations) {
-							System.out.println("MW::Abort() unreserving " + key);
-							c.unreserve(key);
-						}
-					}
+					String key = item.getReservedItemKey();
+					System.out.println("MW::Abort is unreserving " + key);
+					c.unreserve(key);
 					//Save updated customer object to storage
 					writeData(transactionId, c.getKey(), c);
 				}
 			}
 		}
+		txnHistory.remove(transactionId);
 		// TODO: abort on other resource managers
 		
 		// Unlock all locks that this txn has locks on
@@ -894,21 +888,10 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			v.add(item);
 		}
 	}
-	private void addReservationHistory(int txnId, String key) {
-		if (!reservationHistory.containsKey(txnId)) {
-			Vector<String> v = new Vector<String>();
-			v.add(key);
-			reservationHistory.put(txnId, v);
-		} else {
-			Vector<String> v = reservationHistory.get(txnId);
-			v.add(key);
-		}
-	}
 	//Not sponsored by walmart. Rolls back customer's info on what it has reserved
 	private void rollback(int txnId, int customerId, Vector flightNumbers, String location, boolean car, boolean room) {
 		System.out.println("MW:: ROLLBACK!  Car:"+car + ", Room:" + room);
 		Vector<ItemHistory> items = txnHistory.get(txnId);
-		Vector<String> reservations = reservationHistory.get(txnId);
 		for (ItemHistory item : items) {
 			//We know here in MW that all items are Customer objects
 			Customer cust = ((Customer)item.getItem());
