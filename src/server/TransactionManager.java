@@ -33,7 +33,7 @@ public class TransactionManager {
 		System.out.println("TM:: Committing transaction "+txnID);                       
 		// Delete this txn from txnHistory since we know we won't abort anymore         
 		removeTxn(txnID);                                                               
-		//TODO: remove txn history on other resource managers when we work on distributed version 
+		// Remove txn history on other resource managers 
 		proxyFlight.removeTxn(txnID);
 		proxyCar.removeTxn(txnID);
 		proxyRoom.removeTxn(txnID);
@@ -53,18 +53,18 @@ public class TransactionManager {
 		if (history != null) {
 			System.out.println("TM:: Reverting changes...");
 			for (ItemHistory item : history) {
-				if (item.getAction() == ItemHistory.Action.ADDED) {
+				if (item.getAction() == ItemHistory.Action.ADDED && item.getItemType() == ItemHistory.ItemType.CUSTOMER) {
 					// Delete item from storage
 					System.out.println("TM:: Deleting added customer.");
 					mw.deleteFromStorage(txnID,
 							((Customer) item.getItem()).getKey());
-				} else if (item.getAction() == ItemHistory.Action.DELETED) {
+				} else if (item.getAction() == ItemHistory.Action.DELETED && item.getItemType() == ItemHistory.ItemType.CUSTOMER) {
 					// Add back to storage
 					System.out.println("TM:: Adding a deleted customer.");
 					mw.writeToStorage(txnID,
 							((Customer) item.getItem()).getKey(),
 							((Customer) item.getItem()));
-				} else {
+				} else if (item.getAction() == ItemHistory.Action.RESERVED && item.getItemType() == ItemHistory.ItemType.CUSTOMER) {
 					// Item was updated. Revert back to old version
 					System.out
 							.println("TM:: Reverting customer to its old stats");
@@ -79,14 +79,21 @@ public class TransactionManager {
 					mw.writeToStorage(txnID, c.getKey(), c);
 				}
 			}
-		}                                                               
-        removeTxn(txnID);                                                
-        // TODO: abort on other resource managers                        
+		}                                                      
+        removeTxn(txnID);
+        // TODO: abort on other resource managers
+        System.out.println("TM:: sending abort to resource managers..");
+		proxyFlight.abort(txnID);
+		proxyCar.abort(txnID);
+		proxyRoom.abort(txnID);
                                                                          
         // Unlock all locks that this txn has locks on   
-        boolean r = mw.unlock(txnID);                                    
-        System.out.println("TM:: Unlock all held locks:" + r);           
-        return true;
+		boolean r1 = mw.unlock(txnID);    
+		boolean r2 = proxyFlight.unlock(txnID);
+		boolean r3 = proxyCar.unlock(txnID);
+		boolean r4 = proxyRoom.unlock(txnID);
+		System.out.println("TM:: Unlock all locks held by this transaction. customer:" + r1 + ", flight:" + r2 + ", car:" + r3 + ", room:" + r4);     
+		return r1 && r2 && r3 && r4;  
 	}
 	
 	public void sendAbort(RM rm) {

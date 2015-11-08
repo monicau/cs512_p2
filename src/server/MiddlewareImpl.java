@@ -865,6 +865,16 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
     /* Abort the given transaction */
 	@Override
 	public boolean abort(int transactionId) {
+		return tm.abort(transactionId);
+	}
+    /* Shut down gracefully */
+	@Override
+	public boolean shutdown() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+	
+	public boolean abortCustomer(int transactionId) {
 		System.out.println("MW:: Aborting a transaction " + transactionId);
 		// Revert changes
 		Vector<ItemHistory> history = tm.getTxnHistory(transactionId);
@@ -894,20 +904,10 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			}
 		}
 		tm.removeTxn(transactionId);
-		// TODO: abort on other resource managers
-		
-		// Unlock all locks that this txn has locks on
 		boolean r = lm.UnlockAll(transactionId);
 		System.out.println("MW:: Unlock all held locks:" + r);
 		return true;
 	}
-    /* Shut down gracefully */
-	@Override
-	public boolean shutdown() {
-		// TODO Auto-generated method stub
-		return false;
-	}
-	
 	
 	private void addCustomerHistory(int txnId, ItemHistory item) {
 		Vector<ItemHistory> v = tm.getTxnHistory(txnId);
