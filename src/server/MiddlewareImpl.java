@@ -57,11 +57,8 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	ResourceManager proxyRoom;
 	ResourceManagerImplService service;
 	boolean useWebService;
-	Hashtable<Integer, Vector<ItemHistory>> txnHistory;
-//	Hashtable<Integer, Vector<String>> reservationHistory;
-	
-	private int txnCounter;
 	private LockManager lm;
+	private TransactionManager tm;
 
 	int next_port = 8098;
 	Map<Integer, Socket> resourceManagers = new HashMap<>();
@@ -75,10 +72,8 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	
 	public MiddlewareImpl(){
 		System.out.println("Starting middleware");
-		txnCounter = 0;
-		txnHistory = new Hashtable<Integer, Vector<ItemHistory>>();
-//		reservationHistory = new Hashtable<Integer, Vector<String>>();
 		lm = new LockManager();
+		tm = new TransactionManager();
 		//Determine if we are using web services or tcp
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(new File("serviceType.txt")));
@@ -812,19 +807,15 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	
     /* Start a new transaction and return its id. */
 	@Override
-	synchronized public int start() {
-		System.out.println("MW:: Start a transaction.");
-		int temp = txnCounter;
-		txnCounter++;
-		System.out.println("MW:: Generated and return transaction number " + temp);
-		return temp;
+	public int start() {
+		return tm.start();
 	}
     /* Attempt to commit the given transaction; return true upon success. */
 	@Override
 	public boolean commit(int transactionId) {
 		System.out.println("MW:: Committing transaction "+transactionId);
 		// Delete this txn from txnHistory since we know we won't abort anymore
-		txnHistory.remove(transactionId);
+		tm.removeTxn(transactionId);
 		//TODO: remove txn history on other resource managers when we work on distributed version
 		
 		// Unlock all locks that this txn has locks on
@@ -837,7 +828,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public boolean abort(int transactionId) {
 		System.out.println("MW:: Aborting a transaction " + transactionId);
 		// Revert changes
-		Vector<ItemHistory> history = txnHistory.get(transactionId);
+		Vector<ItemHistory> history = tm.getTxnHistory(transactionId);
 		if (history != null) {
 			System.out.println("MW:: Reverting changes...");
 			for (ItemHistory item : history) {
@@ -863,7 +854,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 				}
 			}
 		}
-		txnHistory.remove(transactionId);
+		tm.removeTxn(transactionId);
 		// TODO: abort on other resource managers
 		
 		// Unlock all locks that this txn has locks on
@@ -879,19 +870,19 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	}
 	
 	private void addCustomerHistory(int txnId, ItemHistory item) {
-		if (!txnHistory.containsKey(txnId)) {
-			Vector<ItemHistory> v = new Vector<ItemHistory>();
+		Vector<ItemHistory> v = tm.getTxnHistory(txnId);
+		if (v == null) {
+			v = new Vector<ItemHistory>();
 			v.add(item);
-			txnHistory.put(txnId, v);
 		} else {
-			Vector<ItemHistory> v = txnHistory.get(txnId);
 			v.add(item);
 		}
+		tm.setTxnHistory(txnId, v);
 	}
 	//Not sponsored by walmart. Rolls back customer's info on what it has reserved
 	private void rollback(int txnId, int customerId, Vector flightNumbers, String location, boolean car, boolean room) {
 		System.out.println("MW:: ROLLBACK!  Car:"+car + ", Room:" + room);
-		Vector<ItemHistory> items = txnHistory.get(txnId);
+		Vector<ItemHistory> items = tm.getTxnHistory(txnId);
 		for (ItemHistory item : items) {
 			//We know here in MW that all items are Customer objects
 			Customer cust = ((Customer)item.getItem());
