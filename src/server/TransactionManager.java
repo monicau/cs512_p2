@@ -3,9 +3,9 @@ package server;
 import java.util.Vector;
 
 public class TransactionManager {
-	public enum RM { FLIGHT, CAR, ROOM };
+	public enum RM { FLIGHT, CAR, ROOM, CUSTOMER };
 	private RMMap<Integer, Vector<RM>> activeRMs;
-	private RMMap<Integer, Vector<ItemHistory>> txnHistory;
+	
 	private int txnCounter;
 	private MiddlewareImpl mw;
 	private ResourceManager proxyFlight;
@@ -14,7 +14,6 @@ public class TransactionManager {
 	
 	public TransactionManager(MiddlewareImpl middleware, ResourceManager flight, ResourceManager car, ResourceManager room) {
 		activeRMs = new RMMap<Integer, Vector<RM>>();
-		txnHistory = new RMMap<Integer, Vector<ItemHistory>>();
 		txnCounter = 0;
 		mw = middleware;
 		proxyFlight = flight;
@@ -25,106 +24,82 @@ public class TransactionManager {
 	// Return a new txn ID
 	synchronized public int start() {
 		txnCounter++;
-		System.out.println("Calling mw... "+ mw.talk());
-		System.out.println("Calling proxy flight..." + proxyFlight.talk());;
 		return txnCounter;
 	}
 	public boolean commit(int txnID) {                                                   
-		System.out.println("TM:: Committing transaction "+txnID);                       
-		// Delete this txn from txnHistory since we know we won't abort anymore         
-		removeTxn(txnID);                                                               
-		// Remove txn history on other resource managers 
-		proxyFlight.removeTxn(txnID);
-		proxyCar.removeTxn(txnID);
-		proxyRoom.removeTxn(txnID);
-		// Unlock all locks that this txn has locks on
-		boolean r1 = mw.unlock(txnID);    
-		boolean r2 = proxyFlight.unlock(txnID);
-		boolean r3 = proxyCar.unlock(txnID);
-		boolean r4 = proxyRoom.unlock(txnID);
-		System.out.println("TM:: Unlock all locks held by this transaction. customer:" + r1 + ", flight:" + r2 + ", car:" + r3 + ", room:" + r4);     
-		return r1 && r2 && r3 && r4;                                                                       
+		System.out.println("TM:: Committing transaction "+txnID);    
+		boolean success = true;
+		// Remove txn history on other resource managers and unlock locks
+		Vector<RM> rms = activeRMs.get(txnID);
+		if (rms != null) {
+			for (RM rm : rms) {
+				if (rm == RM.CUSTOMER) {
+					System.out.println("TM:: clearing txn history and unlocking customer");
+					mw.removeTxn(txnID);
+					success = mw.unlock(txnID) && success;
+				} else if (rm == RM.FLIGHT) {
+					System.out.println("TM:: clearing txn history and unlocking flight");
+					proxyFlight.removeTxn(txnID);
+					success = proxyFlight.unlock(txnID) && success;
+				} else if (rm == RM.CAR) {
+					System.out.println("TM:: clearing txn history and unlocking car");
+					proxyCar.removeTxn(txnID);
+					success = proxyCar.unlock(txnID) && success;
+				} else if (rm == RM.ROOM) {
+					System.out.println("TM:: clearing txn history and unlocking room");
+					proxyRoom.removeTxn(txnID);
+					success = proxyRoom.unlock(txnID) && success;
+				}
+			}
+		} else {
+			System.out.println("TM:: no RMs involved in this txn.  Committing nothing..");
+		}
+		System.out.println("TM:: Unlock all locks held by this transaction: " + success);     
+		//Remove rm's from activeRM 
+		activeRMs.remove(txnID);
+		return success;
 	}   
 	
 	public boolean abort(int txnID) {
         System.out.println("TM:: Aborting a transaction " + txnID);      
-        // Revert changes                                                
-		Vector<ItemHistory> history = getTxnHistory(txnID);
-		if (history != null) {
-			System.out.println("TM:: Reverting changes...");
-			for (ItemHistory item : history) {
-				if (item.getAction() == ItemHistory.Action.ADDED && item.getItemType() == ItemHistory.ItemType.CUSTOMER) {
-					// Delete item from storage
-					System.out.println("TM:: Deleting added customer.");
-					mw.deleteFromStorage(txnID,
-							((Customer) item.getItem()).getKey());
-				} else if (item.getAction() == ItemHistory.Action.DELETED && item.getItemType() == ItemHistory.ItemType.CUSTOMER) {
-					// Add back to storage
-					System.out.println("TM:: Adding a deleted customer.");
-					mw.writeToStorage(txnID,
-							((Customer) item.getItem()).getKey(),
-							((Customer) item.getItem()));
-				} else if (item.getAction() == ItemHistory.Action.RESERVED && item.getItemType() == ItemHistory.ItemType.CUSTOMER) {
-					// Item was updated. Revert back to old version
-					System.out
-							.println("TM:: Reverting customer to its old stats");
-					mw.deleteFromStorage(txnID,
-							((Customer) item.getItem()).getKey());
-					// Remove reservation from customer object
-					Customer c = (Customer) item.getItem();
-					String key = item.getReservedItemKey();
-					System.out.println("TM::Abort is unreserving " + key);
-					c.unreserve(key);
-					// Save updated customer object to storage
-					mw.writeToStorage(txnID, c.getKey(), c);
+        System.out.println("TM:: sending abort to resource managers..");
+        boolean success = true;
+		// Remove txn history on other resource managers and unlock locks
+		Vector<RM> rms = activeRMs.get(txnID);
+		if (rms != null) {
+			for (RM rm : rms) {
+				if (rm == RM.CUSTOMER) {
+					mw.abortCustomer(txnID);
+					success = mw.unlock(txnID) && success;
+				} else if (rm == RM.FLIGHT) {
+					proxyFlight.abort(txnID);
+					success = proxyFlight.unlock(txnID) && success;
+				} else if (rm == RM.CAR) {
+					proxyCar.abort(txnID);
+					success = proxyCar.unlock(txnID) && success;
+				} else if (rm == RM.ROOM) {
+					proxyRoom.abort(txnID);
+					success = proxyRoom.unlock(txnID) && success;
 				}
 			}
-		}                                                      
-        removeTxn(txnID);
-        // TODO: abort on other resource managers
-        System.out.println("TM:: sending abort to resource managers..");
-		proxyFlight.abort(txnID);
-		proxyCar.abort(txnID);
-		proxyRoom.abort(txnID);
-                                                                         
-        // Unlock all locks that this txn has locks on   
-		boolean r1 = mw.unlock(txnID);    
-		boolean r2 = proxyFlight.unlock(txnID);
-		boolean r3 = proxyCar.unlock(txnID);
-		boolean r4 = proxyRoom.unlock(txnID);
-		System.out.println("TM:: Unlock all locks held by this transaction. customer:" + r1 + ", flight:" + r2 + ", car:" + r3 + ", room:" + r4);     
-		return r1 && r2 && r3 && r4;  
-	}
-	
-	public void sendAbort(RM rm) {
-		
+		}
+		System.out.println("TM:: Unlock all locks held by this transaction: " + success);     
+		//Remove rm's from activeRM 
+		activeRMs.remove(txnID);
+		return success;  
 	}
 	
 	// Add RM to a txn
 	public void enlist(int txnID, RM rm) {
+		System.out.println("TM:: enlisting rm: " + rm);
 		Vector<RM> v = activeRMs.get(txnID);
 		if (v == null) {
 			v = new Vector<RM>();
 			v.add(rm);
 			activeRMs.put(txnID, v);
-		} else {
+		} else if (!v.contains(rm)) {
 			v.add(rm);
 			activeRMs.replace(txnID, v);
 		}
 	}
-	
-	// Methods for txnHistory
-	
-	public void removeTxn(int txnID) {
-		txnHistory.remove(txnID);
-	}
-	
-	public Vector<ItemHistory> getTxnHistory(int txnID) {
-		return txnHistory.get(txnID);
-	}
-	
-	public void setTxnHistory(int txnID, Vector<ItemHistory> v) {
-		txnHistory.put(txnID, v);
-	}
-
 }

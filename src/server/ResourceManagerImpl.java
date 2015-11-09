@@ -576,8 +576,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		}
 		v.add(item);
 		txnHistory.put(txnId, v);
-		Trace.info("RM:: added " + item.getReservedItemKey()
-				+ " to txnHistory");
+		Trace.info("RM:: added " + item.getReservedItemKey() + " to txnHistory");
 	}
 
 	// Add flight reservation to this customer.
@@ -655,11 +654,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	public boolean shutdown() {
 		// TODO Auto-generated method stub
 		return false;
-	}
-
-	@Override
-	public String talk() {
-		return "Hi im an rm";
 	}
 
 	@Override

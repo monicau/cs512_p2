@@ -44,6 +44,7 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import javax.jws.WebMethod;
 import javax.jws.WebService;
 
+import server.TransactionManager.RM;
 import lockmanager.DeadlockException;
 import lockmanager.LockManager;
 
@@ -59,6 +60,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	boolean useWebService;
 	private LockManager lm;
 	private TransactionManager tm;
+	private RMMap<Integer, Vector<ItemHistory>> txnHistory;
 
 	int next_port = 8098;
 	Map<Integer, Socket> resourceManagers = new HashMap<>();
@@ -73,6 +75,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public MiddlewareImpl(){
 		System.out.println("Starting middleware");
 		lm = new LockManager();
+		txnHistory = new RMMap<Integer, Vector<ItemHistory>>();
 		//Determine if we are using web services or tcp
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(new File("serviceType.txt")));
@@ -376,6 +379,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice)  {
 		Trace.info("MW::addFlight(" + id + ", " + flightNumber 
 				+ ", $" + flightPrice + ", " + numSeats + ") called.");
+		tm.enlist(id, RM.FLIGHT);
 		boolean returnValue = proxyFlight.addFlight(id, flightNumber, numSeats, flightPrice);
 		Trace.info("MW:: addFlight succeeded:" + Boolean.toString(returnValue));
 		return returnValue;
@@ -383,17 +387,20 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	@Override
 	public boolean deleteFlight(int id, int flightNumber) {
+		tm.enlist(id, RM.FLIGHT);
 		return proxyFlight.deleteFlight(id, flightNumber);
 	}
 
 	// Returns the number of empty seats on this flight.
 	@Override
 	public int queryFlight(int id, int flightNumber) {
+		tm.enlist(id, RM.FLIGHT);
 		return proxyFlight.queryFlight(id, flightNumber);
 	}
 
 	// Returns price of this flight.
 	public int queryFlightPrice(int id, int flightNumber) {
+		tm.enlist(id, RM.FLIGHT);
 		return proxyFlight.queryFlightPrice(id, flightNumber);
 	}
 
@@ -443,6 +450,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public boolean addCars(int id, String location, int numCars, int carPrice) {
 		Trace.info("MW::addCars(" + id + ", " + location + ", " 
 				+ numCars + ", $" + carPrice + ") called.");
+		tm.enlist(id, RM.CAR);
 		boolean returnValue = proxyCar.addCars(id, location, numCars, carPrice);
 		Trace.info("MW::addCar succeeded: " + Boolean.toString(returnValue));
 		return returnValue;
@@ -451,18 +459,21 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Delete cars from a location.
 	@Override
 	public boolean deleteCars(int id, String location) {
+		tm.enlist(id, RM.CAR);
 		return proxyCar.deleteCars(id, location);
 	}
 
 	// Returns the number of cars available at a location.
 	@Override
 	public int queryCars(int id, String location) {
+		tm.enlist(id, RM.CAR);
 		return proxyCar.queryCars(id, location);
 	}
 
 	// Returns price of cars at this location.
 	@Override
 	public int queryCarsPrice(int id, String location) {
+		tm.enlist(id, RM.CAR);
 		return proxyCar.queryCarsPrice(id, location);
 	}
 
@@ -476,6 +487,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
 		Trace.info("MW::addRooms(" + id + ", " + location + ", " 
 				+ numRooms + ", $" + roomPrice + ") called.");
+		tm.enlist(id, RM.ROOM);
 		boolean returnValue = proxyRoom.addRooms(id, location, numRooms, roomPrice);
 		Trace.info("MW::addRooms succeeded: " + Boolean.toString(returnValue));
 		return returnValue;
@@ -484,18 +496,21 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Delete rooms from a location.
 	@Override
 	public boolean deleteRooms(int id, String location) {
+		tm.enlist(id, RM.ROOM);
 		return proxyRoom.deleteRooms(id, location);
 	}
 
 	// Returns the number of rooms available at a location.
 	@Override
 	public int queryRooms(int id, String location) {
+		tm.enlist(id, RM.ROOM);
 		return proxyRoom.queryRooms(id, location);
 	}
 
 	// Returns room price at this location.
 	@Override
 	public int queryRoomsPrice(int id, String location) {
+		tm.enlist(id, RM.ROOM);
 		return proxyRoom.queryRoomsPrice(id, location);
 	}
 
@@ -505,6 +520,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public int newCustomer(int id) throws DeadlockException {
 		Trace.info("INFO: MW::newCustomer(" + id + ") called.");
+		tm.enlist(id, RM.CUSTOMER);
 		// Generate a globally unique Id for the new customer.
 		int customerId;
 		synchronized(this) {
@@ -529,6 +545,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean newCustomerId(int id, int customerId) throws DeadlockException {
 		Trace.info("INFO: MW::newCustomer(" + id + ", " + customerId + ") called.");
+		tm.enlist(id, RM.CUSTOMER);
 		//Lock on new customer
 		lm.Lock(id, "customer_" + customerId, LockManager.READ);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -552,6 +569,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean deleteCustomer(int id, int customerId) throws DeadlockException {
 		Trace.info("MW::deleteCustomer(" + id + ", " + customerId + ") called.");
+		tm.enlist(id, RM.CUSTOMER);
 		//Write lock on customer
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -619,6 +637,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public String queryCustomerInfo(int id, int customerId) throws DeadlockException {
 		Trace.info("MW::queryCustomerInfo(" + id + ", " + customerId + ") called.");
+		tm.enlist(id, RM.CUSTOMER);
 		// Read lock on customer
 		lm.Lock(id, "customer_" + customerId, LockManager.READ);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -658,6 +677,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		//Save reservation info to resource manager
 		boolean result;
 		try {
+			tm.enlist(id, RM.FLIGHT);
 			result = proxyFlight.reserveItem("flight", id, flightNumber, null);
 		} catch (Exception e) {
 			throw new DeadlockException(id, e.getMessage());
@@ -693,6 +713,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		//Save reservation info to resource manager
 		boolean result;
 		try {
+			tm.enlist(id, RM.CAR);
 			result = proxyCar.reserveItem("car", id, -1, location);
 		} catch (Exception e) {
 			throw new DeadlockException(id, e.getMessage());
@@ -728,6 +749,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		//Save reservation info to resource manager
 		boolean result;
 		try {
+			tm.enlist(id, RM.ROOM);
 			result = proxyRoom.reserveItem("room", id, -1, location);
 		} catch (Exception e) {
 			throw new DeadlockException(id, e.getMessage());
@@ -753,6 +775,12 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean reserveItinerary(int id, int customerId, Vector flightNumbers, String location, boolean car, boolean room) throws DeadlockException {
 		Trace.info("MW::reserve itinerary");
+		// Enlist resource managers
+		if (flightNumbers.size()>0) tm.enlist(id, RM.FLIGHT);
+		if (car) tm.enlist(id, RM.CAR);
+		if (room) tm.enlist(id, RM.ROOM);
+		
+		// Check vacancy before trying to reserve
 		for (Object element: flightNumbers) {
 			int flightNumber;
 			if(useWebService){
@@ -762,11 +790,13 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			else{
 				flightNumber = (int)((Double) element).doubleValue();
 			}
+			
 			if (queryFlight(id,flightNumber)<1) {
 				Trace.info("MW::No free seats on flight " + flightNumber);
 				return false;
 			}
 		}
+		
 		if (car && queryCars(id, location)<1) {
 			Trace.info("MW::No free cars at " + location + " to rent.");
 			return false;
@@ -877,7 +907,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public boolean abortCustomer(int transactionId) {
 		System.out.println("MW:: Aborting a transaction " + transactionId);
 		// Revert changes
-		Vector<ItemHistory> history = tm.getTxnHistory(transactionId);
+		Vector<ItemHistory> history = txnHistory.get(transactionId);
 		if (history != null) {
 			System.out.println("MW:: Reverting changes...");
 			for (ItemHistory item : history) {
@@ -903,26 +933,22 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 				}
 			}
 		}
-		tm.removeTxn(transactionId);
-		boolean r = lm.UnlockAll(transactionId);
-		System.out.println("MW:: Unlock all held locks:" + r);
+		txnHistory.remove(transactionId);
 		return true;
 	}
 	
 	private void addCustomerHistory(int txnId, ItemHistory item) {
-		Vector<ItemHistory> v = tm.getTxnHistory(txnId);
+		Vector<ItemHistory> v = txnHistory.get(txnId);
 		if (v == null) {
 			v = new Vector<ItemHistory>();
-			v.add(item);
-		} else {
-			v.add(item);
-		}
-		tm.setTxnHistory(txnId, v);
+		} 
+		v.add(item);
+		txnHistory.put(txnId, v);
 	}
 	//Not sponsored by walmart. Rolls back customer's info on what it has reserved
 	private void rollback(int txnId, int customerId, Vector flightNumbers, String location, boolean car, boolean room) {
 		System.out.println("MW:: ROLLBACK!  Car:"+car + ", Room:" + room);
-		Vector<ItemHistory> items = tm.getTxnHistory(txnId);
+		Vector<ItemHistory> items = txnHistory.get(txnId);
 		for (ItemHistory item : items) {
 			//We know here in MW that all items are Customer objects
 			Customer cust = ((Customer)item.getItem());
@@ -973,12 +999,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	
 	@Override
 	public void removeTxn(int txnID) {
-//		txnHistory.remove(txnID); TODO
+		txnHistory.remove(txnID);
 	}
-	
-	@Override
-	public String talk() {
-		return "Hi im middleware";
-	} 
 }
 

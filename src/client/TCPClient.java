@@ -337,12 +337,6 @@ public class TCPClient extends TCPServiceRequest implements ResourceManager{
 	}
 
 	@Override
-	public String talk() {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
 	public boolean unlock(int txnID) {
 		// TODO Auto-generated method stub
 		return false;

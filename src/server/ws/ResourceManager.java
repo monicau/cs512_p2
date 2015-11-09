@@ -176,5 +176,4 @@ public interface ResourceManager {
 	public RMItem readFromStorage(int id, String key);                        
 	public void writeToStorage(int id, String key, RMItem value);                 
 	public RMItem deleteFromStorage(int id, String key);                   
-    public String talk();
 }
