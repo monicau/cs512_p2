@@ -11,19 +11,27 @@ public class TransactionManager {
 	private ResourceManager proxyFlight;
 	private ResourceManager proxyCar;
 	private ResourceManager proxyRoom;
+	private int ttl; // time to live timeout
+	private RMMap<Integer, Integer> timeAlive;// key=txnID, value=time alive
 	
-	public TransactionManager(MiddlewareImpl middleware, ResourceManager flight, ResourceManager car, ResourceManager room) {
+	public TransactionManager(MiddlewareImpl middleware, ResourceManager flight, ResourceManager car, ResourceManager room, int timeToLive) {
 		activeRMs = new RMMap<Integer, Vector<RM>>();
+		timeAlive = new RMMap<Integer, Integer>();
 		txnCounter = 0;
 		mw = middleware;
 		proxyFlight = flight;
 		proxyCar = car;
 		proxyRoom = room;
+		ttl = timeToLive;
 	}
 	
 	// Return a new txn ID
 	synchronized public int start() {
 		txnCounter++;
+		
+		// Start timing this transaction
+		timeAlive.put(txnCounter, ttl);
+		
 		return txnCounter;
 	}
 	public boolean commit(int txnID) {                                                   
@@ -56,7 +64,7 @@ public class TransactionManager {
 		}
 		System.out.println("TM:: Unlock all locks held by this transaction: " + success);     
 		//Remove rm's from activeRM 
-		activeRMs.remove(txnID);
+		delist(txnID);
 		return success;
 	}   
 	
@@ -85,7 +93,7 @@ public class TransactionManager {
 		}
 		System.out.println("TM:: Unlock all locks held by this transaction: " + success);     
 		//Remove rm's from activeRM 
-		activeRMs.remove(txnID);
+		delist(txnID);
 		return success;  
 	}
 	
@@ -101,5 +109,17 @@ public class TransactionManager {
 			v.add(rm);
 			activeRMs.replace(txnID, v);
 		}
+	}
+	
+	// Remove all active RM's from activeRM list and remove txn from timeAlive list 
+	private void delist(int txnID) {
+		activeRMs.remove(txnID);
+		timeAlive.remove(txnID);
+	}
+	
+	// Tell us the txn is alive
+	public void ping(int txnID) {
+		// Reset time to live for this txn
+		timeAlive.replace(txnID, ttl);
 	}
 }

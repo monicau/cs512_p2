@@ -136,7 +136,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			} catch (FileNotFoundException e) {
 				Trace.info("ERROR: File not found!");
 			}
-			tm = new TransactionManager(this, proxyFlight, proxyCar, proxyRoom);
+			tm = new TransactionManager(this, proxyFlight, proxyCar, proxyRoom, 1000);
 		} 
 		else {
 			// sockets
@@ -379,6 +379,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice) throws DeadlockException {
 		Trace.info("MW::addFlight(" + id + ", " + flightNumber 
 				+ ", $" + flightPrice + ", " + numSeats + ") called.");
+		tm.ping(id);
 		tm.enlist(id, RM.FLIGHT);
 		boolean r = true;
 		try {
@@ -392,6 +393,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	@Override
 	public boolean deleteFlight(int id, int flightNumber) throws DeadlockException {
+		tm.ping(id);
 		tm.enlist(id, RM.FLIGHT);
 		try {
 			return proxyFlight.deleteFlight(id, flightNumber);
@@ -403,6 +405,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Returns the number of empty seats on this flight.
 	@Override
 	public int queryFlight(int id, int flightNumber) throws DeadlockException {
+		tm.ping(id);
 		tm.enlist(id, RM.FLIGHT);
 		try {
 			return proxyFlight.queryFlight(id, flightNumber);
@@ -413,6 +416,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	// Returns price of this flight.
 	public int queryFlightPrice(int id, int flightNumber) throws DeadlockException {
+		tm.ping(id);
 		tm.enlist(id, RM.FLIGHT);
 		try {
 			return proxyFlight.queryFlightPrice(id, flightNumber);
@@ -467,6 +471,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public boolean addCars(int id, String location, int numCars, int carPrice) throws DeadlockException {
 		Trace.info("MW::addCars(" + id + ", " + location + ", " 
 				+ numCars + ", $" + carPrice + ") called.");
+		tm.ping(id);
 		tm.enlist(id, RM.CAR);
 		boolean r = true;
 		try {
@@ -481,6 +486,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Delete cars from a location.
 	@Override
 	public boolean deleteCars(int id, String location) throws DeadlockException {
+		tm.ping(id);
 		tm.enlist(id, RM.CAR);
 		try {
 			return proxyCar.deleteCars(id, location);
@@ -492,6 +498,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Returns the number of cars available at a location.
 	@Override
 	public int queryCars(int id, String location) throws DeadlockException {
+		tm.ping(id);
 		tm.enlist(id, RM.CAR);
 		try {
 			return proxyCar.queryCars(id, location);
@@ -503,6 +510,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Returns price of cars at this location.
 	@Override
 	public int queryCarsPrice(int id, String location) throws DeadlockException {
+		tm.ping(id);
 		tm.enlist(id, RM.CAR);
 		try {
 			return proxyCar.queryCarsPrice(id, location);
@@ -521,6 +529,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public boolean addRooms(int id, String location, int numRooms, int roomPrice) throws DeadlockException {
 		Trace.info("MW::addRooms(" + id + ", " + location + ", " 
 				+ numRooms + ", $" + roomPrice + ") called.");
+		tm.ping(id);
 		tm.enlist(id, RM.ROOM);
 		boolean r = true;
 		try {
@@ -535,6 +544,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Delete rooms from a location.
 	@Override
 	public boolean deleteRooms(int id, String location) throws DeadlockException {
+		tm.ping(id);
 		tm.enlist(id, RM.ROOM);
 		try {
 			return proxyRoom.deleteRooms(id, location);
@@ -546,6 +556,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Returns the number of rooms available at a location.
 	@Override
 	public int queryRooms(int id, String location) throws DeadlockException {
+		tm.ping(id);
 		tm.enlist(id, RM.ROOM);
 		try {
 			return proxyRoom.queryRooms(id, location);
@@ -557,6 +568,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Returns room price at this location.
 	@Override
 	public int queryRoomsPrice(int id, String location) throws DeadlockException {
+		tm.ping(id);
 		tm.enlist(id, RM.ROOM);
 		try {
 			return proxyRoom.queryRoomsPrice(id, location);
@@ -571,6 +583,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public int newCustomer(int id) throws DeadlockException {
 		Trace.info("INFO: MW::newCustomer(" + id + ") called.");
+		tm.ping(id);
 		tm.enlist(id, RM.CUSTOMER);
 		// Generate a globally unique Id for the new customer.
 		int customerId;
@@ -595,6 +608,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// This method makes testing easier.
 	@Override
 	public boolean newCustomerId(int id, int customerId) throws DeadlockException {
+		tm.ping(id);
 		Trace.info("INFO: MW::newCustomer(" + id + ", " + customerId + ") called.");
 		tm.enlist(id, RM.CUSTOMER);
 		//Lock on new customer
@@ -620,6 +634,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean deleteCustomer(int id, int customerId) throws DeadlockException {
 		Trace.info("MW::deleteCustomer(" + id + ", " + customerId + ") called.");
+		tm.ping(id);
 		tm.enlist(id, RM.CUSTOMER);
 		//Write lock on customer
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
@@ -672,6 +687,8 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public RMMap getCustomerReservations(int id, int customerId) throws DeadlockException {
 		Trace.info("MW::getCustomerReservations(" + id + ", " 
 				+ customerId + ") called.");
+		tm.ping(id);
+		tm.enlist(id, RM.CUSTOMER);
 		// Read lock on customer
 		lm.Lock(id, "customer_" + customerId, LockManager.READ);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -688,6 +705,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public String queryCustomerInfo(int id, int customerId) throws DeadlockException {
 		Trace.info("MW::queryCustomerInfo(" + id + ", " + customerId + ") called.");
+		tm.ping(id);
 		tm.enlist(id, RM.CUSTOMER);
 		// Read lock on customer
 		lm.Lock(id, "customer_" + customerId, LockManager.READ);
@@ -716,6 +734,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Add flight reservation to this customer.  
 	@Override
 	public boolean reserveFlight(int id, int customerId, int flightNumber) throws DeadlockException {
+		tm.ping(id);
 		// Read customer object if it exists (and read lock it).
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -752,6 +771,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Add car reservation to this customer. 
 	@Override
 	public boolean reserveCar(int id, int customerId, String location) throws DeadlockException {
+		tm.ping(id);
 		// Read customer object if it exists (and read lock it).
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -788,6 +808,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Add room reservation to this customer. 
 	@Override
 	public boolean reserveRoom(int id, int customerId, String location) throws DeadlockException {
+		tm.ping(id);
 		// Read customer object if it exists (and read lock it).
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -825,6 +846,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Reserve an itinerary.
 	@Override
 	public boolean reserveItinerary(int id, int customerId, Vector flightNumbers, String location, boolean car, boolean room) throws DeadlockException {
+		tm.ping(id);
 		Trace.info("MW::reserve itinerary");
 		// Enlist resource managers
 		if (flightNumbers.size()>0) tm.enlist(id, RM.FLIGHT);
