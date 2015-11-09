@@ -376,32 +376,49 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Note: if flightPrice <= 0 and the flight already exists, it maintains 
 	// its current price.
 	@Override
-	public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice)  {
+	public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice) throws DeadlockException {
 		Trace.info("MW::addFlight(" + id + ", " + flightNumber 
 				+ ", $" + flightPrice + ", " + numSeats + ") called.");
 		tm.enlist(id, RM.FLIGHT);
-		boolean returnValue = proxyFlight.addFlight(id, flightNumber, numSeats, flightPrice);
-		Trace.info("MW:: addFlight succeeded:" + Boolean.toString(returnValue));
-		return returnValue;
+		boolean r = true;
+		try {
+			r = proxyFlight.addFlight(id, flightNumber, numSeats, flightPrice);
+		} catch (Exception e) {
+			throw new DeadlockException(id, e.getMessage());
+		}
+		Trace.info("MW:: addFlight succeeded:" + Boolean.toString(r));
+		return r;
 	}
 
 	@Override
-	public boolean deleteFlight(int id, int flightNumber) {
+	public boolean deleteFlight(int id, int flightNumber) throws DeadlockException {
 		tm.enlist(id, RM.FLIGHT);
-		return proxyFlight.deleteFlight(id, flightNumber);
+		try {
+			return proxyFlight.deleteFlight(id, flightNumber);
+		} catch (Exception e) {
+			throw new DeadlockException(id, e.getMessage());
+		}
 	}
 
 	// Returns the number of empty seats on this flight.
 	@Override
-	public int queryFlight(int id, int flightNumber) {
+	public int queryFlight(int id, int flightNumber) throws DeadlockException {
 		tm.enlist(id, RM.FLIGHT);
-		return proxyFlight.queryFlight(id, flightNumber);
+		try {
+			return proxyFlight.queryFlight(id, flightNumber);
+		} catch (Exception e) {
+			throw new DeadlockException(id, e.getMessage());
+		}
 	}
 
 	// Returns price of this flight.
-	public int queryFlightPrice(int id, int flightNumber) {
+	public int queryFlightPrice(int id, int flightNumber) throws DeadlockException {
 		tm.enlist(id, RM.FLIGHT);
-		return proxyFlight.queryFlightPrice(id, flightNumber);
+		try {
+			return proxyFlight.queryFlightPrice(id, flightNumber);
+		} catch (Exception e) {
+			throw new DeadlockException(id, e.getMessage());
+		}
 	}
 
 	/*
@@ -447,34 +464,51 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Note: if price <= 0 and the car location already exists, it maintains 
 	// its current price.
 	@Override
-	public boolean addCars(int id, String location, int numCars, int carPrice) {
+	public boolean addCars(int id, String location, int numCars, int carPrice) throws DeadlockException {
 		Trace.info("MW::addCars(" + id + ", " + location + ", " 
 				+ numCars + ", $" + carPrice + ") called.");
 		tm.enlist(id, RM.CAR);
-		boolean returnValue = proxyCar.addCars(id, location, numCars, carPrice);
-		Trace.info("MW::addCar succeeded: " + Boolean.toString(returnValue));
-		return returnValue;
+		boolean r = true;
+		try {
+			r = proxyCar.addCars(id, location, numCars, carPrice);
+		} catch (Exception e) {
+			throw new DeadlockException(id, e.getMessage());
+		}
+		Trace.info("MW::addCar succeeded: " + Boolean.toString(r));
+		return r;
 	}
 
 	// Delete cars from a location.
 	@Override
-	public boolean deleteCars(int id, String location) {
+	public boolean deleteCars(int id, String location) throws DeadlockException {
 		tm.enlist(id, RM.CAR);
-		return proxyCar.deleteCars(id, location);
+		try {
+			return proxyCar.deleteCars(id, location);
+		} catch (Exception e) {
+			throw new DeadlockException(id, e.getMessage());
+		}
 	}
 
 	// Returns the number of cars available at a location.
 	@Override
-	public int queryCars(int id, String location) {
+	public int queryCars(int id, String location) throws DeadlockException {
 		tm.enlist(id, RM.CAR);
-		return proxyCar.queryCars(id, location);
+		try {
+			return proxyCar.queryCars(id, location);
+		} catch (Exception e) {
+			throw new DeadlockException(id, e.getMessage());
+		}
 	}
 
 	// Returns price of cars at this location.
 	@Override
-	public int queryCarsPrice(int id, String location) {
+	public int queryCarsPrice(int id, String location) throws DeadlockException {
 		tm.enlist(id, RM.CAR);
-		return proxyCar.queryCarsPrice(id, location);
+		try {
+			return proxyCar.queryCarsPrice(id, location);
+		} catch (Exception e) {
+			throw new DeadlockException(id, e.getMessage());
+		}
 	}
 
 
@@ -484,34 +518,51 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Note: if price <= 0 and the room location already exists, it maintains 
 	// its current price.
 	@Override
-	public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
+	public boolean addRooms(int id, String location, int numRooms, int roomPrice) throws DeadlockException {
 		Trace.info("MW::addRooms(" + id + ", " + location + ", " 
 				+ numRooms + ", $" + roomPrice + ") called.");
 		tm.enlist(id, RM.ROOM);
-		boolean returnValue = proxyRoom.addRooms(id, location, numRooms, roomPrice);
-		Trace.info("MW::addRooms succeeded: " + Boolean.toString(returnValue));
-		return returnValue;
+		boolean r = true;
+		try {
+			r = proxyRoom.addRooms(id, location, numRooms, roomPrice);
+		} catch (Exception e) {
+			throw new DeadlockException(id, e.getMessage());
+		}
+		Trace.info("MW::addRooms succeeded: " + Boolean.toString(r));
+		return r;
 	}
 
 	// Delete rooms from a location.
 	@Override
-	public boolean deleteRooms(int id, String location) {
+	public boolean deleteRooms(int id, String location) throws DeadlockException {
 		tm.enlist(id, RM.ROOM);
-		return proxyRoom.deleteRooms(id, location);
+		try {
+			return proxyRoom.deleteRooms(id, location);
+		} catch (Exception e) {
+			throw new DeadlockException(id, e.getMessage());
+		}
 	}
 
 	// Returns the number of rooms available at a location.
 	@Override
-	public int queryRooms(int id, String location) {
+	public int queryRooms(int id, String location) throws DeadlockException {
 		tm.enlist(id, RM.ROOM);
-		return proxyRoom.queryRooms(id, location);
+		try {
+			return proxyRoom.queryRooms(id, location);
+		} catch (Exception e) {
+			throw new DeadlockException(id, e.getMessage());
+		}
 	}
 
 	// Returns room price at this location.
 	@Override
-	public int queryRoomsPrice(int id, String location) {
+	public int queryRoomsPrice(int id, String location) throws DeadlockException {
 		tm.enlist(id, RM.ROOM);
-		return proxyRoom.queryRoomsPrice(id, location);
+		try {
+			return proxyRoom.queryRoomsPrice(id, location);
+		} catch (Exception e) {
+			throw new DeadlockException(id, e.getMessage());
+		}
 	}
 
 
@@ -529,7 +580,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 					String.valueOf(Math.round(Math.random() * 100 + 1)));
 		}
 		//Lock on new customer
-		lm.Lock(id, "customer_" + customerId, LockManager.READ);
+		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		Customer cust = new Customer(customerId);
 		
 		//Add customer to txn history
@@ -547,7 +598,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		Trace.info("INFO: MW::newCustomer(" + id + ", " + customerId + ") called.");
 		tm.enlist(id, RM.CUSTOMER);
 		//Lock on new customer
-		lm.Lock(id, "customer_" + customerId, LockManager.READ);
+		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
 		if (cust == null) {
 			//Create customer and save to storage
@@ -978,8 +1029,9 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	}
 	
 	@Override
-	public boolean unlock(int txnID) {                                                      
-	       return lm.UnlockAll(txnID);                                                                                                                                                      
+	public boolean unlock(int txnID) {   
+		System.out.println("MW:: unlocking all locks of txn " + txnID);
+		return lm.UnlockAll(txnID);                                                                                  
 	}        
 	
 	@Override

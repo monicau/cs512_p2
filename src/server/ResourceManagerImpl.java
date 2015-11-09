@@ -238,6 +238,18 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 				return false;
 			} else {
 				if (curObj.getReserved() == 0) {
+					// Add to txn history
+					ItemType myType;
+					if (curObj.getKey().contains("flight")) {
+						myType = ItemType.FLIGHT;
+					} else if (curObj.getKey().contains("car")) {
+						myType = ItemType.CAR;
+					} else {
+						myType = ItemType.ROOM;
+					}
+					ItemHistory history = new ItemHistory(myType, ItemHistory.Action.DELETED, curObj, curObj.getKey());
+					addTxnHistory(id, history);
+					// Delete from storage
 					removeData(id, curObj.getKey());
 					Trace.info("RM::deleteItem(" + id + ", " + key + ") OK.");
 					return true;
@@ -286,14 +298,16 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	// its current price.
 	@Override
 	synchronized public boolean addFlight(int id, int flightNumber,
-			int numSeats, int flightPrice) {
+			int numSeats, int flightPrice) throws DeadlockException {
 		Trace.info("RM::addFlight(" + id + ", " + flightNumber + ", $"
 				+ flightPrice + ", " + numSeats + ") called.");
+		lm.Lock(id, Flight.getKey(flightNumber), LockManager.WRITE);
+		
 		Flight curObj = (Flight) readData(id, Flight.getKey(flightNumber));
 		if (curObj == null) {
 			// Doesn't exist; add it.
-			Flight newObj = new Flight(flightNumber, numSeats, flightPrice);
-			writeData(id, newObj.getKey(), newObj);
+			curObj = new Flight(flightNumber, numSeats, flightPrice);
+			writeData(id, curObj.getKey(), curObj);
 			Trace.info("RM::addFlight(" + id + ", " + flightNumber + ", $"
 					+ flightPrice + ", " + numSeats + ") OK.");
 		} else {
@@ -307,22 +321,28 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 					+ flightPrice + ", " + numSeats + ") OK: " + "seats = "
 					+ curObj.getCount() + ", price = $" + flightPrice);
 		}
+		// Add to txn history
+		ItemHistory history = new ItemHistory(ItemType.FLIGHT, ItemHistory.Action.ADDED, curObj, curObj.getKey());
+		addTxnHistory(id, history);
 		return (true);
 	}
 
 	@Override
-	public boolean deleteFlight(int id, int flightNumber) {
+	public boolean deleteFlight(int id, int flightNumber) throws DeadlockException {
+		lm.Lock(id, Flight.getKey(flightNumber), LockManager.WRITE);
 		return deleteItem(id, Flight.getKey(flightNumber));
 	}
 
 	// Returns the number of empty seats on this flight.
 	@Override
-	public int queryFlight(int id, int flightNumber) {
+	public int queryFlight(int id, int flightNumber) throws DeadlockException {
+		lm.Lock(id, Flight.getKey(flightNumber), LockManager.READ);
 		return queryNum(id, Flight.getKey(flightNumber));
 	}
 
 	// Returns price of this flight.
-	public int queryFlightPrice(int id, int flightNumber) {
+	public int queryFlightPrice(int id, int flightNumber) throws DeadlockException {
+		lm.Lock(id, Flight.getKey(flightNumber), LockManager.READ);
 		return queryPrice(id, Flight.getKey(flightNumber));
 	}
 
@@ -358,14 +378,15 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	// its current price.
 	@Override
 	synchronized public boolean addCars(int id, String location, int numCars,
-			int carPrice) {
+			int carPrice) throws DeadlockException {
 		Trace.info("RM::addCars(" + id + ", " + location + ", " + numCars
 				+ ", $" + carPrice + ") called.");
+		lm.Lock(id, Car.getKey(location), LockManager.WRITE);
 		Car curObj = (Car) readData(id, Car.getKey(location));
 		if (curObj == null) {
 			// Doesn't exist; add it.
-			Car newObj = new Car(location, numCars, carPrice);
-			writeData(id, newObj.getKey(), newObj);
+			curObj = new Car(location, numCars, carPrice);
+			writeData(id, curObj.getKey(), curObj);
 			Trace.info("RM::addCars(" + id + ", " + location + ", " + numCars
 					+ ", $" + carPrice + ") OK.");
 		} else {
@@ -379,24 +400,30 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 					+ ", $" + carPrice + ") OK: " + "cars = "
 					+ curObj.getCount() + ", price = $" + carPrice);
 		}
+		// Add to txn history
+		ItemHistory history = new ItemHistory(ItemType.CAR, ItemHistory.Action.ADDED, curObj, curObj.getKey());
+		addTxnHistory(id, history);
 		return (true);
 	}
 
 	// Delete cars from a location.
 	@Override
-	public boolean deleteCars(int id, String location) {
+	public boolean deleteCars(int id, String location) throws DeadlockException {
+		lm.Lock(id, Car.getKey(location), LockManager.WRITE);
 		return deleteItem(id, Car.getKey(location));
 	}
 
 	// Returns the number of cars available at a location.
 	@Override
-	public int queryCars(int id, String location) {
+	public int queryCars(int id, String location) throws DeadlockException {
+		lm.Lock(id, Car.getKey(location), LockManager.READ);
 		return queryNum(id, Car.getKey(location));
 	}
 
 	// Returns price of cars at this location.
 	@Override
-	public int queryCarsPrice(int id, String location) {
+	public int queryCarsPrice(int id, String location) throws DeadlockException {
+		lm.Lock(id, Car.getKey(location), LockManager.READ);
 		return queryPrice(id, Car.getKey(location));
 	}
 
@@ -407,14 +434,15 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	// its current price.
 	@Override
 	synchronized public boolean addRooms(int id, String location, int numRooms,
-			int roomPrice) {
+			int roomPrice) throws DeadlockException {
 		Trace.info("RM::addRooms(" + id + ", " + location + ", " + numRooms
 				+ ", $" + roomPrice + ") called.");
+		lm.Lock(id, Room.getKey(location), LockManager.WRITE);
 		Room curObj = (Room) readData(id, Room.getKey(location));
 		if (curObj == null) {
 			// Doesn't exist; add it.
-			Room newObj = new Room(location, numRooms, roomPrice);
-			writeData(id, newObj.getKey(), newObj);
+			curObj = new Room(location, numRooms, roomPrice);
+			writeData(id, curObj.getKey(), curObj);
 			Trace.info("RM::addRooms(" + id + ", " + location + ", " + numRooms
 					+ ", $" + roomPrice + ") OK.");
 		} else {
@@ -428,24 +456,30 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 					+ ", $" + roomPrice + ") OK: " + "rooms = "
 					+ curObj.getCount() + ", price = $" + roomPrice);
 		}
+		// Add to txn history
+		ItemHistory history = new ItemHistory(ItemType.ROOM, ItemHistory.Action.ADDED, curObj, curObj.getKey());
+		addTxnHistory(id, history);
 		return (true);
 	}
 
 	// Delete rooms from a location.
 	@Override
-	public boolean deleteRooms(int id, String location) {
+	public boolean deleteRooms(int id, String location) throws DeadlockException {
+		lm.Lock(id, Room.getKey(location), LockManager.WRITE);
 		return deleteItem(id, Room.getKey(location));
 	}
 
 	// Returns the number of rooms available at a location.
 	@Override
-	public int queryRooms(int id, String location) {
+	public int queryRooms(int id, String location) throws DeadlockException {
+		lm.Lock(id, Room.getKey(location), LockManager.READ);
 		return queryNum(id, Room.getKey(location));
 	}
 
 	// Returns room price at this location.
 	@Override
-	public int queryRoomsPrice(int id, String location) {
+	public int queryRoomsPrice(int id, String location) throws DeadlockException {
+		lm.Lock(id, Room.getKey(location), LockManager.READ);
 		return queryPrice(id, Room.getKey(location));
 	}
 
@@ -663,6 +697,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
 	@Override
 	public boolean unlock(int txnID) {
+		Trace.info("RM:: unlocking all locks of txn " + txnID);
 		return lm.UnlockAll(txnID);
 	}
 
