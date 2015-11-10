@@ -319,13 +319,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			history = new ItemHistory(ItemType.FLIGHT, ItemHistory.Action.ADDED, curObj, curObj.getKey());
 
 		} else {
-			
 			int oldCount = curObj.getCount();
-			String oldLocation = curObj.getLocation();
 			int oldPrice = curObj.getPrice();
 			int oldReserved = curObj.getReserved();
 			
-			history = new ItemHistory(ItemType.FLIGHT, ItemHistory.Action.UPDATED, curObj, curObj.getKey(), oldCount, oldPrice, oldReserved, oldLocation);
+			history = new ItemHistory(ItemType.FLIGHT, ItemHistory.Action.UPDATED, curObj, curObj.getKey(), oldCount, oldPrice, oldReserved);
 
 			// Add seats to existing flight and update the price.
 			curObj.setCount(curObj.getCount() + numSeats);
@@ -410,11 +408,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			history = new ItemHistory(ItemType.CAR, ItemHistory.Action.ADDED, curObj, curObj.getKey());
 		} else {
 			int oldCount = curObj.getCount();
-			String oldLocation = curObj.getLocation();
 			int oldPrice = curObj.getPrice();
 			int oldReserved = curObj.getReserved();
 			
-			history = new ItemHistory(ItemType.CAR, ItemHistory.Action.UPDATED, curObj, curObj.getKey(), oldCount, oldPrice, oldReserved, oldLocation);
+			history = new ItemHistory(ItemType.CAR, ItemHistory.Action.UPDATED, curObj, curObj.getKey(), oldCount, oldPrice, oldReserved);
 			
 			// Add count to existing object and update price.
 			curObj.setCount(curObj.getCount() + numCars);
@@ -474,11 +471,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			history = new ItemHistory(ItemType.ROOM, ItemHistory.Action.ADDED, curObj, curObj.getKey());
 		} else {
 			int oldCount = curObj.getCount();
-			String oldLocation = curObj.getLocation();
 			int oldPrice = curObj.getPrice();
 			int oldReserved = curObj.getReserved();
 			
-			history = new ItemHistory(ItemType.ROOM, ItemHistory.Action.UPDATED, curObj, curObj.getKey(), oldCount, oldPrice, oldReserved, oldLocation);
+			history = new ItemHistory(ItemType.ROOM, ItemHistory.Action.UPDATED, curObj, curObj.getKey(), oldCount, oldPrice, oldReserved);
 			
 			// Add count to existing object and update price.
 			curObj.setCount(curObj.getCount() + numRooms);
@@ -694,19 +690,49 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		Vector<ItemHistory> history = txnHistory.get(transactionId);
 		if (history != null) {
 			Trace.info("RM:: Reverting changes...");
-			for (ItemHistory item : history) {
-				if (item.getAction() == Action.ADDED) {
+			for (ItemHistory entry : history) {
+				switch (entry.getAction()) {
+				case ADDED:
+					Trace.info("RM:: Remove added item " + entry.getReservedItemKey());
+					removeData(transactionId, entry.getReservedItemKey());
+					break;
+				case DELETED:
+					Trace.info("RM:: Adding back deleted item " + entry.getReservedItemKey());
+					writeData(transactionId, entry.getReservedItemKey(), entry.getItem());
+					break;
+				case RESERVED:
+					ReservableItem rmItem = (ReservableItem) readData(transactionId, entry.getReservedItemKey());
+					Trace.info("RM:: Unreserving item " + rmItem.getKey());
+					synchronized(rmItem) {
+						rmItem.setCount(rmItem.getCount() + 1);
+						rmItem.setReserved(rmItem.getReserved() - 1);
+		        	}
+					break;
+				case UPDATED:
+					ReservableItem oldItem = (ReservableItem) entry.getItem();
+					Trace.info("RM:: Reverse updating item " + oldItem.getKey());
+					oldItem.setCount(entry.getOldCount());
+					oldItem.setPrice(entry.getOldPrice());
+					oldItem.setReserved(entry.getOldReserved());
+					
+					writeData(transactionId, entry.getReservedItemKey(), oldItem);
+					break;
+				default:
+					throw new IllegalStateException("A new action is detected, there is no implementation ready for this state");
+				}
+				
+				if (entry.getAction() == Action.ADDED) {
 					// Remove item from storage
-					Trace.info("RM:: Remove added item " + item.getReservedItemKey());
-					removeData(transactionId, item.getReservedItemKey());
-				} else if (item.getAction() == Action.DELETED) {
-					Trace.info("RM:: Adding back deleted item " + item.getReservedItemKey());
-					writeData(transactionId, item.getReservedItemKey(),
-							item.getItem());
+					Trace.info("RM:: Remove added item " + entry.getReservedItemKey());
+					removeData(transactionId, entry.getReservedItemKey());
+				} else if (entry.getAction() == Action.DELETED) {
+					Trace.info("RM:: Adding back deleted item " + entry.getReservedItemKey());
+					writeData(transactionId, entry.getReservedItemKey(),
+							entry.getItem());
 				} else {
 					// RESERVED action
 					// Remove reservation
-					ReservableItem rmItem = (ReservableItem) readData(transactionId, item.getReservedItemKey());
+					ReservableItem rmItem = (ReservableItem) readData(transactionId, entry.getReservedItemKey());
 					Trace.info("RM:: Unreserving item " + rmItem.getKey());
 					synchronized(rmItem) {
 						rmItem.setCount(rmItem.getCount() + 1);

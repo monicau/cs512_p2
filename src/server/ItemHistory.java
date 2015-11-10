@@ -12,13 +12,12 @@ public class ItemHistory {
 	private Integer oldCount;
 	private Integer oldPrice;
 	private Integer oldReserved;
-	private String  oldLocation;
-	
+
 	public ItemHistory(ItemType type, Action a, RMItem item, String itemKey) {
-		this(type, a, item, itemKey, null, null, null, null);
+		this(type, a, item, itemKey, null, null, null);
 	}
 	
-	public ItemHistory(ItemType type, Action a, RMItem item, String itemKey, Integer oldCount, Integer oldPrice, Integer oldReserved, String oldLocation) {
+	public ItemHistory(ItemType type, Action a, RMItem item, String itemKey, Integer oldCount, Integer oldPrice, Integer oldReserved) {
 		this.itemType = type;
 		this.action = a;
 		this.item = item;
@@ -27,7 +26,6 @@ public class ItemHistory {
 		this.oldCount = oldCount;
 		this.oldPrice = oldPrice;
 		this.oldReserved = oldReserved;
-		this.oldLocation = oldLocation;
 	}
 	
 	public ItemType getItemType() {
@@ -45,4 +43,18 @@ public class ItemHistory {
 	public String getReservedItemKey() {
 		return this.reservedItemKey;
 	}
+	
+	
+	public Integer getOldCount() {
+		return oldCount;
+	}
+
+	public Integer getOldPrice() {
+		return oldPrice;
+	}
+
+	public Integer getOldReserved() {
+		return oldReserved;
+	}
+
 }
