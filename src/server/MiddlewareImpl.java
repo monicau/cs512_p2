@@ -18,11 +18,13 @@ import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Hashtable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Vector;
 import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
@@ -973,8 +975,10 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
     /* Shut down gracefully */
 	@Override
 	public boolean shutdown() {
-		// TODO Auto-generated method stub
-		return false;
+		Set<Integer> transactionsIds = new HashSet<>(txnHistory.keySet()); //prevent concurrent modification of map
+		return transactionsIds.stream()
+										.map(txn -> abort(txn))
+										.reduce(true, (x,y)-> x&&y);
 	}
 	
 	public boolean abortCustomer(int transactionId) {

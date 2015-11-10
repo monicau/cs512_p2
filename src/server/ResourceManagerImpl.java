@@ -17,6 +17,8 @@ import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.net.Socket;
 import java.net.UnknownHostException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -689,8 +691,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	/* Shut down gracefully */
 	@Override
 	public boolean shutdown() {
-		
-		return false;
+		Set<Integer> transactionsIds = new HashSet<>(txnHistory.keySet()); //prevent concurrent modification of map
+		return transactionsIds.stream()
+										.map(txn -> abort(txn))
+										.reduce(true, (x,y)-> x&&y);
 	}
 
 	@Override
