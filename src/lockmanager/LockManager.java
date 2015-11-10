@@ -66,22 +66,22 @@ public class LockManager
                             // lock table
                         	//convert lock to WRITE for dataObj and txnObj
                         	System.out.println("LOCK CONVERSION TIME!");
-                        	Vector v = this.lockTable.elements(trxnObj);
-                        	for (int i=0; i<v.size(); i++) {
-                        		TrxnObj o = (TrxnObj) v.elementAt(i);
-                        		if (o.getXId()==trxnObj.getXId()) {
-                        			System.out.println("Setting lock of trxnObj in locktable to WRITE");
-                        			o.setLockType(LockManager.WRITE);
-                        		}
-                        	}
+                        	
+                        	Vector<TrxnObj> v = this.lockTable.elements(trxnObj);
+                        	
+                        	for (TrxnObj transaction : v) {
+								if (transaction.getXId() == trxnObj.getXId()) {
+									System.out.println("Setting lock of trxnObj in locktable to WRITE");
+                        			transaction.setLockType(LockManager.WRITE);
+								}
+							}
                         	v = this.lockTable.elements(dataObj);
-                        	for (int i=0; i<v.size(); i++) {
-                        		DataObj o = (DataObj) v.elementAt(i);
-                        		if (o.getXId() == dataObj.getXId()) {
-                        			System.out.println("Setting lock of dataObj in locktable to WRITE");
-                        			o.setLockType(LockManager.WRITE);
-                        		}
-                        	}
+                        	for (TrxnObj transaction : v) {
+								if (transaction.getXId() == trxnObj.getXId()) {
+									System.out.println("Setting lock of dataObj in locktable to WRITE");
+                        			transaction.setLockType(LockManager.WRITE);
+								}
+							}
                         } else {
                             // a lock request that is not lock conversion
                             this.lockTable.add(trxnObj);

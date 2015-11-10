@@ -6,7 +6,7 @@ class LockManagerTest {
 		LockManager lm = new LockManager();
 		t1 = new MyThread(lm, 1);
 		t2 = new MyThread(lm, 2);
-//		t1.start();
+		t1.start();
 		t2.start();
 	}
 }
@@ -33,16 +33,16 @@ class MyThread extends Thread {
 			} catch (InterruptedException e) {
 			}
 
-//			try {
-//				lm.Lock(1, "b", LockManager.WRITE);
-//			} catch (DeadlockException e) {
-//				System.out.println("Deadlock.... ");
-//			}
-//			
-//			try {
-//				this.sleep(4000);
-//			} catch (InterruptedException e) {
-//			}
+			try {
+				lm.Lock(1, "b", LockManager.WRITE);
+			} catch (DeadlockException e) {
+				System.out.println("Deadlock.... ");
+			}
+			
+			try {
+				this.sleep(4000);
+			} catch (InterruptedException e) {
+			}
 			
 			try {
 				System.out.println("1 trying to convert to write lock...");
