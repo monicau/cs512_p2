@@ -721,24 +721,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 					throw new IllegalStateException("A new action is detected, there is no implementation ready for this state");
 				}
 				
-				if (entry.getAction() == Action.ADDED) {
-					// Remove item from storage
-					Trace.info("RM:: Remove added item " + entry.getReservedItemKey());
-					removeData(transactionId, entry.getReservedItemKey());
-				} else if (entry.getAction() == Action.DELETED) {
-					Trace.info("RM:: Adding back deleted item " + entry.getReservedItemKey());
-					writeData(transactionId, entry.getReservedItemKey(),
-							entry.getItem());
-				} else {
-					// RESERVED action
-					// Remove reservation
-					ReservableItem rmItem = (ReservableItem) readData(transactionId, entry.getReservedItemKey());
-					Trace.info("RM:: Unreserving item " + rmItem.getKey());
-					synchronized(rmItem) {
-						rmItem.setCount(rmItem.getCount() + 1);
-						rmItem.setReserved(rmItem.getReserved() - 1);
-		        	}
-				}
 			}
 		}
 		txnHistory.remove(transactionId);
