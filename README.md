@@ -7,7 +7,7 @@ Add transactions!
 - Apache Ant
 
 ###Resource Managers
-```ant rm1 -Dservice.rm1.host=HOSTNAME -Dservice.rm1.port=PORT``
+```ant rm1 -Dservice.rm1.host=HOSTNAME -Dservice.rm1.port=PORT```
 
 ```ant rm2 -Dservice.rm2.host=HOSTNAME -Dservice.rm2.port=PORT```
 
@@ -38,8 +38,10 @@ Access it via: http://HOSTNAME:PORT/mw/service
 where HOST is the hostname/IP of the middleware and PORT is the port that the middleware uses.
 
 ###Performance analysis
-For single client system analysis, launch this client:
 ```ant analysis -Dservice.host=HOST -Dservice.port=PORT```
+
+for single client system analysis, launch this client.
+
 
 --
 
