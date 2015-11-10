@@ -649,25 +649,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean commit(int transactionId) {
 		Trace.info("RM:: commiting transaction "+transactionId);
-		Vector<ItemHistory> history = txnHistory.get(transactionId);
-		
-		for (ItemHistory item : history) {
-			switch (item.getAction()) {
-			case ADDED:
-				writeToStorage(transactionId, item.getReservedItemKey(), item.getItem());
-				break;
-			case DELETED:
-				deleteFromStorage(transactionId, item.getReservedItemKey());
-				break;
-			case RESERVED:
-				break;
-			default:
-				//There are no more cases
-				throw new IllegalStateException("An exceptional case has been detected!");
-			}
-		}
-		
-		return false;
+		if(txnHistory.get(transactionId) == null) return false;
+		txnHistory.remove(transactionId);
+		return true;
 	}
 
 	/* Abort the given transaction */
@@ -705,7 +689,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	/* Shut down gracefully */
 	@Override
 	public boolean shutdown() {
-		// TODO Auto-generated method stub
+		
 		return false;
 	}
 

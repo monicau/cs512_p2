@@ -1,38 +1,92 @@
 package server;
 
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
+import java.util.Map.Entry;
 import java.util.Vector;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TransactionManager {
 	public enum RM { FLIGHT, CAR, ROOM, CUSTOMER };
 	private RMMap<Integer, Vector<RM>> activeRMs;
-	
-	private int txnCounter;
+
+	//	private int txnCounter;
+
+	private AtomicInteger txnCounter;
+
 	private MiddlewareImpl mw;
 	private ResourceManager proxyFlight;
 	private ResourceManager proxyCar;
 	private ResourceManager proxyRoom;
 	private int ttl; // time to live timeout
 	private RMMap<Integer, Integer> timeAlive;// key=txnID, value=time alive
-	
+
+	private Thread sweeper;
+
 	public TransactionManager(MiddlewareImpl middleware, ResourceManager flight, ResourceManager car, ResourceManager room, int timeToLive) {
 		activeRMs = new RMMap<Integer, Vector<RM>>();
 		timeAlive = new RMMap<Integer, Integer>();
-		txnCounter = 0;
+		txnCounter = new AtomicInteger();
 		mw = middleware;
 		proxyFlight = flight;
 		proxyCar = car;
 		proxyRoom = room;
 		ttl = timeToLive;
+
+		Vector<RM> vector = activeRMs.get(0);
+
+		sweeper = new Thread(() ->{
+			while(!Thread.interrupted()){
+				Iterator<Entry<Integer, Integer>> it = timeAlive.entrySet().iterator();
+				while(it.hasNext()){
+					Entry<Integer, Integer> livedFor = it.next();
+					int txnID = livedFor.getKey();
+					int timealive = livedFor.getValue();
+					if(timealive > ttl){
+						boolean success = true;
+						for (RM rm : vector) {
+							switch (rm) {
+							case CUSTOMER:
+								System.out.println("TM:: clearing txn history and unlocking customer");
+								mw.removeTxn(txnID);
+								success = mw.unlock(txnID) && success;
+								break;
+							case FLIGHT:
+								System.out.println("TM:: clearing txn history and unlocking flight");
+								proxyFlight.removeTxn(txnID);
+								success = proxyFlight.unlock(txnID) && success;
+								break;
+							case CAR:
+								System.out.println("TM:: clearing txn history and unlocking car");
+								proxyCar.removeTxn(txnID);
+								success = proxyCar.unlock(txnID) && success;
+								break;
+							case ROOM:
+								System.out.println("TM:: clearing txn history and unlocking room");
+								proxyRoom.removeTxn(txnID);
+								success = proxyRoom.unlock(txnID) && success;
+								break;
+							default:
+								throw new IllegalStateException("A new state is detected, don't know what to do with it");
+							}
+						}
+						System.out.println("TM:: Unlock all locks held by this transaction: " + success); 
+						delist(txnID);
+					}
+				}
+			}
+		});
+		sweeper.start();
 	}
-	
+
 	// Return a new txn ID
 	synchronized public int start() {
-		txnCounter++;
-		
+		int counter = txnCounter.incrementAndGet();
+
 		// Start timing this transaction
-		timeAlive.put(txnCounter, ttl);
-		
-		return txnCounter;
+		timeAlive.put(counter, ttl);
+
+		return counter;
 	}
 	public boolean commit(int txnID) {                                                   
 		System.out.println("TM:: Committing transaction "+txnID);    
@@ -67,11 +121,11 @@ public class TransactionManager {
 		delist(txnID);
 		return success;
 	}   
-	
+
 	public boolean abort(int txnID) {
-        System.out.println("TM:: Aborting a transaction " + txnID);      
-        System.out.println("TM:: sending abort to resource managers..");
-        boolean success = true;
+		System.out.println("TM:: Aborting a transaction " + txnID);      
+		System.out.println("TM:: sending abort to resource managers..");
+		boolean success = true;
 		// Remove txn history on other resource managers and unlock locks
 		Vector<RM> rms = activeRMs.get(txnID);
 		if (rms != null) {
@@ -96,7 +150,7 @@ public class TransactionManager {
 		delist(txnID);
 		return success;  
 	}
-	
+
 	// Add RM to a txn
 	public void enlist(int txnID, RM rm) {
 		System.out.println("TM:: enlisting rm: " + rm);
@@ -110,16 +164,24 @@ public class TransactionManager {
 			activeRMs.replace(txnID, v);
 		}
 	}
-	
+
 	// Remove all active RM's from activeRM list and remove txn from timeAlive list 
 	private void delist(int txnID) {
 		activeRMs.remove(txnID);
 		timeAlive.remove(txnID);
 	}
-	
+
 	// Tell us the txn is alive
 	public void ping(int txnID) {
 		// Reset time to live for this txn
-		timeAlive.replace(txnID, ttl);
+		new Thread(()->{
+			try{
+				timeAlive.replace(txnID, ttl);
+			}
+			catch(ConcurrentModificationException e){
+				Thread.sleep(1);
+				ping(txnID);
+			}
+		}).start();
 	}
 }
