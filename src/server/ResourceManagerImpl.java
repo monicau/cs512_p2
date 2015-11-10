@@ -18,6 +18,7 @@ import java.lang.reflect.Method;
 import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.Vector;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
@@ -37,6 +38,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	private Vector<Integer> completedTransactions;
 	private LockManager lm;
 
+	private AtomicInteger lastTrxnID = new AtomicInteger(0);
+	
 	boolean useWebService;
 
 	AtomicReference<Messenger> messenger_ref = new AtomicReference<>();
@@ -641,13 +644,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	/* Start a new transaction and return its id. */
 	@Override
 	synchronized public int start() {
-		return 1;
+		return lastTrxnID.incrementAndGet();
 	}
 
 	/* Attempt to commit the given transaction; return true upon success. */
 	@Override
 	public boolean commit(int transactionId) {
-		// TODO Auto-generated method stub
+		
 		return false;
 	}
 
