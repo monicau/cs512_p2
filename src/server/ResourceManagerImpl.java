@@ -35,7 +35,6 @@ import com.google.gson.Gson;
 public class ResourceManagerImpl implements server.ws.ResourceManager {
 	private String MW_LOCATION = "localhost";
 	private RMMap<Integer, Vector<ItemHistory>> txnHistory;
-	private Vector<Integer> completedTransactions;
 	private LockManager lm;
 
 	private AtomicInteger lastTrxnID = new AtomicInteger(0);
@@ -47,7 +46,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	public ResourceManagerImpl() {
 		lm = new LockManager();
 		txnHistory = new RMMap<Integer, Vector<ItemHistory>>();
-		completedTransactions = new Vector<Integer>();
 		// Determine if we are using web services or tcp
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(new File(
@@ -650,6 +648,24 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	/* Attempt to commit the given transaction; return true upon success. */
 	@Override
 	public boolean commit(int transactionId) {
+		Trace.info("RM:: commiting transaction "+transactionId);
+		Vector<ItemHistory> history = txnHistory.get(transactionId);
+		
+		for (ItemHistory item : history) {
+			switch (item.getAction()) {
+			case ADDED:
+				writeToStorage(transactionId, item.getReservedItemKey(), item.getItem());
+				break;
+			case DELETED:
+				deleteFromStorage(transactionId, item.getReservedItemKey());
+				break;
+			case RESERVED:
+				break;
+			default:
+				//There are no more cases
+				throw new IllegalStateException("An exceptional case has been detected!");
+			}
+		}
 		
 		return false;
 	}
