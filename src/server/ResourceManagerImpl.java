@@ -307,13 +307,26 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		lm.Lock(id, Flight.getKey(flightNumber), LockManager.WRITE);
 		
 		Flight curObj = (Flight) readData(id, Flight.getKey(flightNumber));
+		
+		ItemHistory history;
+		
 		if (curObj == null) {
 			// Doesn't exist; add it.
 			curObj = new Flight(flightNumber, numSeats, flightPrice);
 			writeData(id, curObj.getKey(), curObj);
 			Trace.info("RM::addFlight(" + id + ", " + flightNumber + ", $"
 					+ flightPrice + ", " + numSeats + ") OK.");
+			history = new ItemHistory(ItemType.FLIGHT, ItemHistory.Action.ADDED, curObj, curObj.getKey());
+
 		} else {
+			
+			int oldCount = curObj.getCount();
+			String oldLocation = curObj.getLocation();
+			int oldPrice = curObj.getPrice();
+			int oldReserved = curObj.getReserved();
+			
+			history = new ItemHistory(ItemType.FLIGHT, ItemHistory.Action.UPDATED, curObj, curObj.getKey(), oldCount, oldPrice, oldReserved, oldLocation);
+
 			// Add seats to existing flight and update the price.
 			curObj.setCount(curObj.getCount() + numSeats);
 			if (flightPrice > 0) {
@@ -325,7 +338,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 					+ curObj.getCount() + ", price = $" + flightPrice);
 		}
 		// Add to txn history
-		ItemHistory history = new ItemHistory(ItemType.FLIGHT, ItemHistory.Action.ADDED, curObj, curObj.getKey());
 		addTxnHistory(id, history);
 		return (true);
 	}
@@ -386,13 +398,24 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 				+ ", $" + carPrice + ") called.");
 		lm.Lock(id, Car.getKey(location), LockManager.WRITE);
 		Car curObj = (Car) readData(id, Car.getKey(location));
+		
+		ItemHistory history;
 		if (curObj == null) {
 			// Doesn't exist; add it.
 			curObj = new Car(location, numCars, carPrice);
 			writeData(id, curObj.getKey(), curObj);
 			Trace.info("RM::addCars(" + id + ", " + location + ", " + numCars
 					+ ", $" + carPrice + ") OK.");
+			
+			history = new ItemHistory(ItemType.CAR, ItemHistory.Action.ADDED, curObj, curObj.getKey());
 		} else {
+			int oldCount = curObj.getCount();
+			String oldLocation = curObj.getLocation();
+			int oldPrice = curObj.getPrice();
+			int oldReserved = curObj.getReserved();
+			
+			history = new ItemHistory(ItemType.CAR, ItemHistory.Action.UPDATED, curObj, curObj.getKey(), oldCount, oldPrice, oldReserved, oldLocation);
+			
 			// Add count to existing object and update price.
 			curObj.setCount(curObj.getCount() + numCars);
 			if (carPrice > 0) {
@@ -404,7 +427,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 					+ curObj.getCount() + ", price = $" + carPrice);
 		}
 		// Add to txn history
-		ItemHistory history = new ItemHistory(ItemType.CAR, ItemHistory.Action.ADDED, curObj, curObj.getKey());
 		addTxnHistory(id, history);
 		return (true);
 	}
@@ -442,13 +464,22 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 				+ ", $" + roomPrice + ") called.");
 		lm.Lock(id, Room.getKey(location), LockManager.WRITE);
 		Room curObj = (Room) readData(id, Room.getKey(location));
+		ItemHistory history;
 		if (curObj == null) {
 			// Doesn't exist; add it.
 			curObj = new Room(location, numRooms, roomPrice);
 			writeData(id, curObj.getKey(), curObj);
 			Trace.info("RM::addRooms(" + id + ", " + location + ", " + numRooms
 					+ ", $" + roomPrice + ") OK.");
+			history = new ItemHistory(ItemType.ROOM, ItemHistory.Action.ADDED, curObj, curObj.getKey());
 		} else {
+			int oldCount = curObj.getCount();
+			String oldLocation = curObj.getLocation();
+			int oldPrice = curObj.getPrice();
+			int oldReserved = curObj.getReserved();
+			
+			history = new ItemHistory(ItemType.ROOM, ItemHistory.Action.UPDATED, curObj, curObj.getKey(), oldCount, oldPrice, oldReserved, oldLocation);
+			
 			// Add count to existing object and update price.
 			curObj.setCount(curObj.getCount() + numRooms);
 			if (roomPrice > 0) {
@@ -460,7 +491,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 					+ curObj.getCount() + ", price = $" + roomPrice);
 		}
 		// Add to txn history
-		ItemHistory history = new ItemHistory(ItemType.ROOM, ItemHistory.Action.ADDED, curObj, curObj.getKey());
+		
 		addTxnHistory(id, history);
 		return (true);
 	}
