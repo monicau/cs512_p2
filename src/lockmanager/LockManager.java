@@ -22,15 +22,7 @@ public class LockManager
     public boolean Lock(int xid, String strData, int lockType) throws DeadlockException {
     
         // if any parameter is invalid, then return false
-        if (xid < 0) { 
-            return false;
-        }
-        
-        if (strData == null) {
-            return false;
-        }
-        
-        if ((lockType != TrxnObj.READ) && (lockType != TrxnObj.WRITE)) { 
+        if (xid < 0 || strData == null || ((lockType != TrxnObj.READ) && (lockType != TrxnObj.WRITE)) ) { 
             return false;
         }
         
