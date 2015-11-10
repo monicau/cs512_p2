@@ -6,6 +6,8 @@ import java.util.Map.Entry;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import server.ws.ResourceManager;
+
 public class TransactionManager {
 	public enum RM { FLIGHT, CAR, ROOM, CUSTOMER };
 	private RMMap<Integer, Vector<RM>> activeRMs;
@@ -98,19 +100,17 @@ public class TransactionManager {
 				if (rm == RM.CUSTOMER) {
 					System.out.println("TM:: clearing txn history and unlocking customer");
 					mw.removeTxn(txnID);
-					success = mw.unlock(txnID) && success;
+					success &= mw.unlock(txnID);
 				} else if (rm == RM.FLIGHT) {
 					System.out.println("TM:: clearing txn history and unlocking flight");
-					proxyFlight.removeTxn(txnID);
-					success = proxyFlight.unlock(txnID) && success;
+					// remove transaction and unlock in one message
+					success &= proxyFlight.commit(txnID);
 				} else if (rm == RM.CAR) {
 					System.out.println("TM:: clearing txn history and unlocking car");
-					proxyCar.removeTxn(txnID);
-					success = proxyCar.unlock(txnID) && success;
+					success &= proxyCar.commit(txnID);
 				} else if (rm == RM.ROOM) {
 					System.out.println("TM:: clearing txn history and unlocking room");
-					proxyRoom.removeTxn(txnID);
-					success = proxyRoom.unlock(txnID) && success;
+					success &= proxyRoom.commit(txnID);
 				}
 			}
 		} else {

@@ -678,9 +678,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean commit(int transactionId) {
 		Trace.info("RM:: commiting transaction "+transactionId);
+		// sanity check
 		if(txnHistory.get(transactionId) == null) return false;
 		txnHistory.remove(transactionId);
-		return true;
+		
+		return this.unlock(transactionId);
 	}
 
 	/* Abort the given transaction */
