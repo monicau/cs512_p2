@@ -737,6 +737,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		tm.ping(id);
 		// Read customer object if it exists (and read lock it).
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
+		tm.enlist(id, RM.CUSTOMER);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
 		if (cust == null) {
 			Trace.warn("MW::reserveFlight(" + id + ", " + customerId +  ", " + flightNumber + ") failed: customer doesn't exist.");
@@ -774,6 +775,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		tm.ping(id);
 		// Read customer object if it exists (and read lock it).
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
+		tm.enlist(id, RM.CUSTOMER);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
 		if (cust == null) {
 			Trace.warn("MW::reserveCar(" + id + ", " + customerId +  ", " + location + ") failed: customer doesn't exist.");
@@ -811,6 +813,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		tm.ping(id);
 		// Read customer object if it exists (and read lock it).
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
+		tm.enlist(id, RM.CUSTOMER);
 		Customer cust = (Customer) readData(id, Customer.getKey(customerId));
 		if (cust == null) {
 			Trace.warn("MW::reserveRoom(" + id + ", " + customerId +  ", " + location + ") failed: customer doesn't exist.");
