@@ -312,8 +312,22 @@
         </java>
     </target>
     
-    <target name="analysis" depends="build-client">
+    <target name="analysis1" depends="build-client">
         <java classname="client.ClientTester">
+            <classpath>
+                <path refid="jaxws.classpath"/>
+                <pathelement location="${basedir}/build/classes"/>
+            </classpath>
+            <arg value="${service.name}"/>
+            <arg value="${service.host}"/>
+            <arg value="${service.port}"/>
+            <arg value="${service.type}"/>
+        </java>
+    </target>
+    
+    
+    <target name="analysis2" depends="build-client">
+        <java classname="client.MultiClientLauncher">
             <classpath>
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>
