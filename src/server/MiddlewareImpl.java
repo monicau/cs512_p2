@@ -863,7 +863,14 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		locksAcquired &= lm.Lock(id, Car.getKey(location), LockManager.WRITE);
 		Vector<Integer> flights = flightNumbers;
 		locksAcquired &= flights.stream()
-								.map(number -> lm.Lock(id, Flight.getKey(number), LockManager.WRITE))
+								.map(number -> {
+									try{
+										return lm.Lock(id, Flight.getKey(number), LockManager.WRITE);
+									}
+									catch(Exception e){
+										return false;
+									}
+								})
 								.reduce(true, (x,y)-> x&&y);
 		
 		// Check vacancy before trying to reserve
