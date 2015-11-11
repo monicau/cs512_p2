@@ -97,20 +97,25 @@ public class TransactionManager {
 		Vector<RM> rms = activeRMs.get(txnID);
 		if (rms != null) {
 			for (RM rm : rms) {
-				if (rm == RM.CUSTOMER) {
+				switch (rm) {
+				case CUSTOMER:
 					System.out.println("TM:: clearing txn history and unlocking customer");
 					mw.removeTxn(txnID);
 					success &= mw.unlock(txnID);
-				} else if (rm == RM.FLIGHT) {
+					break;
+				case FLIGHT:
 					System.out.println("TM:: clearing txn history and unlocking flight");
 					// remove transaction and unlock in one message
 					success &= proxyFlight.commit(txnID);
-				} else if (rm == RM.CAR) {
-					System.out.println("TM:: clearing txn history and unlocking car");
+					break;
+				case CAR:
 					success &= proxyCar.commit(txnID);
-				} else if (rm == RM.ROOM) {
-					System.out.println("TM:: clearing txn history and unlocking room");
+					break;
+				case ROOM:
 					success &= proxyRoom.commit(txnID);
+					break;
+				default:
+					break;
 				}
 			}
 		} else {
@@ -130,18 +135,22 @@ public class TransactionManager {
 		Vector<RM> rms = activeRMs.get(txnID);
 		if (rms != null) {
 			for (RM rm : rms) {
-				if (rm == RM.CUSTOMER) {
-					mw.abortCustomer(txnID);
-					success = mw.unlock(txnID) && success;
-				} else if (rm == RM.FLIGHT) {
-					proxyFlight.abort(txnID);
-					success = proxyFlight.unlock(txnID) && success;
-				} else if (rm == RM.CAR) {
-					proxyCar.abort(txnID);
-					success = proxyCar.unlock(txnID) && success;
-				} else if (rm == RM.ROOM) {
-					proxyRoom.abort(txnID);
-					success = proxyRoom.unlock(txnID) && success;
+				switch (rm) {
+				case CUSTOMER:
+					success &= mw.abortCustomer(txnID) && mw.unlock(txnID) ;
+					break;
+				case FLIGHT:
+					// abort transaction and unlock in one message
+					success &= proxyFlight.abort(txnID);
+					break;
+				case CAR:
+					success &= proxyCar.abort(txnID);
+					break;
+				case ROOM:
+					success &= proxyRoom.abort(txnID);
+					break;
+				default:
+					break;
 				}
 			}
 		}
@@ -167,8 +176,12 @@ public class TransactionManager {
 
 	// Remove all active RM's from activeRM list and remove txn from timeAlive list 
 	private void delist(int txnID) {
-		activeRMs.remove(txnID);
-		timeAlive.remove(txnID);
+		// make removal atomic
+		activeRMs.computeIfPresent(txnID, (i,v)-> {
+			timeAlive.remove(txnID);
+			return null;
+		});
+		activeRMs.remove(txnID, null);
 	}
 
 	// Tell us the txn is alive
@@ -179,7 +192,11 @@ public class TransactionManager {
 				timeAlive.replace(txnID, ttl);
 			}
 			catch(ConcurrentModificationException e){
-				Thread.sleep(1);
+				try {
+					Thread.sleep(1);
+				} catch (Exception e1) {
+					e1.printStackTrace();
+				}
 				ping(txnID);
 			}
 		}).start();

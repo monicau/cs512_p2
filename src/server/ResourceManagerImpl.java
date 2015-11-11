@@ -689,7 +689,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean abort(int transactionId) {
 		Trace.info("RM:: received abort request");
-		Vector<ItemHistory> history = txnHistory.get(transactionId);
+		Vector<ItemHistory> history = txnHistory.remove(transactionId); // pop the item from map
 		if (history != null) {
 			Trace.info("RM:: Reverting changes...");
 			for (ItemHistory entry : history) {
@@ -722,11 +722,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 				default:
 					throw new IllegalStateException("A new action is detected, there is no implementation ready for this state");
 				}
-				
 			}
 		}
-		txnHistory.remove(transactionId);
-		return true;
+		return this.unlock(transactionId);
 	}
 
 	/* Shut down gracefully */
