@@ -83,7 +83,7 @@ public class MultiClientLauncher {
 		        	System.out.print(t + ", ");
 		        }
 				
-		        Long last = (veryMean.size() > 1) ? veryMean.elementAt(veryMean.size()-1) : 0;
+		        Long last = (veryMean.size() > 1) ? veryMean.elementAt(veryMean.size()-1) : 0L;
 		        Long sum = means.stream().reduce(0L, (acc,y)->acc+y);
 		        veryMean.add(sum/means.size());
 		        means.clear();
