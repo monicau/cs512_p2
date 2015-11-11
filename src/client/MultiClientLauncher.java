@@ -181,18 +181,3 @@ class ClientThread extends WSClient implements Runnable {
 		}
 	}
 }
-class Resetter extends WSClient implements Runnable {
-
-	public Resetter(String serviceName, String serviceHost, int servicePort) throws MalformedURLException {
-		super(serviceName, serviceHost, servicePort);
-	}
-
-	@Override
-	public void run() {
-		proxy.reset();
-		System.out.println("Reset everything");
-	}
-	
-	
-	
-}

@@ -6,7 +6,6 @@ import java.util.Map.Entry;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import server.ws.ResourceManager;
 
 public class TransactionManager {
 	public enum RM { FLIGHT, CAR, ROOM, CUSTOMER };
