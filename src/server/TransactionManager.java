@@ -35,8 +35,6 @@ public class TransactionManager {
 		proxyRoom = room;
 		ttl = timeToLive;
 
-		Vector<RM> vector = activeRMs.get(0);
-
 		sweeper = new Thread(() ->{
 			while(!Thread.interrupted()){
 				Iterator<Entry<Integer, Integer>> it = timeAlive.entrySet().iterator();
@@ -44,37 +42,36 @@ public class TransactionManager {
 					Entry<Integer, Integer> livedFor = it.next();
 					int txnID = livedFor.getKey();
 					int timealive = livedFor.getValue();
+					Vector<RM> vector = activeRMs.get(txnID);
 					if(timealive > ttl){
 						boolean success = true;
 						for (RM rm : vector) {
 							switch (rm) {
 							case CUSTOMER:
-								System.out.println("TM:: clearing txn history and unlocking customer");
-								mw.removeTxn(txnID);
-								success = mw.unlock(txnID) && success;
+								success &= mw.abortCustomer(txnID) && mw.unlock(txnID) ;
 								break;
 							case FLIGHT:
-								System.out.println("TM:: clearing txn history and unlocking flight");
-								proxyFlight.removeTxn(txnID);
-								success = proxyFlight.unlock(txnID) && success;
+								// abort transaction and unlock in one message
+								success &= proxyFlight.abort(txnID);
 								break;
 							case CAR:
-								System.out.println("TM:: clearing txn history and unlocking car");
-								proxyCar.removeTxn(txnID);
-								success = proxyCar.unlock(txnID) && success;
+								success &= proxyCar.abort(txnID);
 								break;
 							case ROOM:
-								System.out.println("TM:: clearing txn history and unlocking room");
-								proxyRoom.removeTxn(txnID);
-								success = proxyRoom.unlock(txnID) && success;
+								success &= proxyRoom.abort(txnID);
 								break;
 							default:
-								throw new IllegalStateException("A new state is detected, don't know what to do with it");
+								break;
 							}
 						}
 						System.out.println("TM:: Unlock all locks held by this transaction: " + success); 
 						delist(txnID);
 					}
+				}
+				try {
+					Thread.sleep(500);
+				} catch (Exception e) {
+					e.printStackTrace();
 				}
 			}
 		});
@@ -200,5 +197,9 @@ public class TransactionManager {
 				ping(txnID);
 			}
 		}).start();
+	}
+	
+	protected void stopHeartbeatSweeper(){
+		this.sweeper.interrupt();
 	}
 }

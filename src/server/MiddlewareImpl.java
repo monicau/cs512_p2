@@ -975,6 +975,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
     /* Shut down gracefully */
 	@Override
 	public boolean shutdown() {
+		tm.stopHeartbeatSweeper();
 		Set<Integer> transactionsIds = new HashSet<>(txnHistory.keySet()); //prevent concurrent modification of map
 		return transactionsIds.stream()
 										.map(txn -> abort(txn))
