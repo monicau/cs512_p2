@@ -83,14 +83,14 @@ public class MultiClientLauncher {
 		        	System.out.print(t + ", ");
 		        }
 				
-		        Long last = veryMean.elementAt(veryMean.size()-1);
+		        Long last = (veryMean.size() > 1) ? veryMean.elementAt(veryMean.size()-1) : 0;
 		        Long sum = means.stream().reduce(0L, (acc,y)->acc+y);
 		        veryMean.add(sum/means.size());
 		        means.clear();
 		        clients.clear();
 		        threads.clear();
 		        
-		        long difference = last-sum/means.size();
+		        long difference = Math.abs(last-sum/means.size());
 		        saturated = difference < threshold;
 			}
 	        
@@ -160,7 +160,7 @@ class ClientThread extends WSClient implements Runnable {
 				proxy.addFlight(id, r1, r2, r3);
 				proxy.commit(id);
 				long endTime = System.nanoTime();
-				totalTime = (endTime - startTime) / 1000000;
+				totalTime += (endTime - startTime) / 1000000;
 				System.out.println("Txn " + id + " added flight-" + r1 + " and committed. Took " + totalTime);
 				long sleepTime = waitTime - totalTime;
 				if (sleepTime < 0) {
