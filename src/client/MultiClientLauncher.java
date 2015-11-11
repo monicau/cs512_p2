@@ -82,16 +82,28 @@ public class MultiClientLauncher {
 		        for (long t : means) {
 		        	System.out.print(t + ", ");
 		        }
-				
-		        Long last = (veryMean.size() > 1) ? veryMean.elementAt(veryMean.size()-1) : 0L;
-		        Long sum = means.stream().reduce(0L, (acc,y)->acc+y);
-		        veryMean.add(sum/means.size());
-		        means.clear();
-		        clients.clear();
-		        threads.clear();
 		        
-		        long difference = Math.abs(last-sum/means.size());
-		        saturated = difference < threshold;
+		        long avg;
+				if(veryMean.size() > 1){
+					Long last = veryMean.elementAt(veryMean.size()-1) ;
+					Long sum = means.stream().reduce(0L, (acc,y)->acc+y);
+					avg = sum/means.size();
+			        veryMean.add(avg);
+			        means.clear();
+			        clients.clear();
+			        threads.clear();
+			        
+			        long difference = Math.abs(last-avg);
+			        saturated = difference < threshold;
+				}
+				else{
+					Long sum = means.stream().reduce(0L, (acc,y)->acc+y);
+					avg = sum/means.size();
+					veryMean.add(avg);
+			        means.clear();
+			        clients.clear();
+			        threads.clear();
+				}
 			}
 	        
 	        
