@@ -1,11 +1,19 @@
 package client;
 
+import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.net.MalformedURLException;
+import java.rmi.server.RMIClassLoader;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.Vector;
+import java.util.concurrent.Callable;
+
 
 public class MultiClientLauncher {
 	
@@ -148,33 +156,70 @@ class ClientThread extends WSClient implements Runnable {
 		}
 	}
 	
+	public void client(int i, int[] r1s, int[] r2s, String[] r3s, String[] r4s, long[] totalTimes){
+		try{
+			long startTime = System.nanoTime();
+			int id = proxy.start();
+			proxy.addFlight(id, r1s[i], r2s[i], r2s[i]);
+			proxy.addCars(id, r3s[i], r1s[i], r2s[i]);
+			proxy.addRooms(id, r4s[i], r1s[i], r2s[i]);
+			proxy.commit(id);
+			long endTime = System.nanoTime();
+			
+			totalTimes[i] = (endTime - startTime) / 1000000;
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+	}
+	
 	// Do transactions that access all RM's
 	private void multipleRM() {
-		long totalTime = 0;
 		try {
-			int r1 = rand.nextInt(10000);
-			int r2 = rand.nextInt(10000);
-			String r3 = Integer.toString(rand.nextInt(10000));
-			String r4 = Integer.toString(rand.nextInt(10000));
-			for (int i=0; i < iterations; i++) {
-				long startTime = System.nanoTime();
-				int id = proxy.start();
-				proxy.addFlight(id, r1, r2, r2);
-				proxy.addCars(id, r3, r1, r2);
-				proxy.addRooms(id, r4, r1, r2);
-				proxy.commit(id);
-				long endTime = System.nanoTime();
-				totalTime = (endTime - startTime) / 1000000;
-				System.out.println("Txn " + id + " added flight-" + r1 + " and committed. Took " + totalTime);
-				long sleepTime = waitTime - totalTime;
-				if (sleepTime < 0) {
-					System.out.println("WARNING: System cannot handle " + tps + " transactions per second!");
-					return;
-				} else {
-					executionTimes.add(totalTime);
-					Thread.sleep(sleepTime);
-				}
+			
+			int iterations_todo = iterations + 20; // include warm-up / cool-down
+			
+			final int[] r1s = new int[iterations_todo];
+			final int[] r2s = new int[iterations_todo];
+			final String[] r3s = new String[iterations_todo];
+			final String[] r4s = new String[iterations_todo];
+			
+			final long[] totalTimes = new long[iterations_todo];
+			long[] randTimes = new long[iterations_todo];
+			
+			Thread[] submission = new Thread[iterations_todo];
+			
+			for (int i = 0; i < iterations_todo; i++) {
+				r1s[i] = rand.nextInt(10000);
+				r2s[i] = rand.nextInt(10000);
+				r3s[i] = Integer.toString(rand.nextInt(10000));
+				r4s[i] = Integer.toString(rand.nextInt(10000));
+				randTimes[i] = (long) (rand.nextGaussian() * waitTime/10); //+/- 10% of waittime
+			
+				final ResourceManager rm = proxy;
+				
+				final int count = i;
+				submission[i] = new Thread(()->{
+					client(count, r1s, r2s, r3s, r4s, totalTimes);
+				});
+			}			
+			for (int i=0; i < iterations_todo; i++) {
+				submission[i].start();
+				System.out.println("Running submission "+i);
+				Thread.sleep(waitTime+randTimes[i]);
 			}
+
+			long totalTime = Arrays.stream(totalTimes).reduce(0, (x,y) -> x+y );
+			
+			File f = new File("totalTimes-c"+numClients+"l"+tps+".csv");
+			PrintWriter writer = new PrintWriter(f);
+			
+			for (int i = 10; i < totalTimes.length-10; i++) {
+				writer.println(totalTimes[i]+",");
+			}
+			writer.flush();
+			writer.close();
+			
 		} catch (Exception e) {
 			System.out.println("Deadlock or interrupted during sleep! Too bad");
 			e.printStackTrace();
