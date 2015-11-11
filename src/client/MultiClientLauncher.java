@@ -209,11 +209,15 @@ class ClientThread extends WSClient implements Runnable {
 				Thread.sleep(waitTime+randTimes[i]);
 			}
 
-			long totalTime = Arrays.stream(totalTimes).reduce(0, (x,y) -> x+y );
 			
+			
+			long[] goodOldTimes = Arrays.copyOfRange(totalTimes, 10, 10+iterations);
+			long totalTime = Arrays.stream(goodOldTimes).reduce(0, (x,y) -> x+y );
 			File f = new File("totalTimes-c"+numClients+"l"+tps+".csv");
 			PrintWriter writer = new PrintWriter(f);
-			
+			writer.println("Average:");
+			writer.println(totalTime+",\n");
+			writer.println("Raw Data:");
 			for (int i = 10; i < totalTimes.length-10; i++) {
 				writer.println(totalTimes[i]+",");
 			}
