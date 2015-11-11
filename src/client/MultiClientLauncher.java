@@ -47,36 +47,57 @@ public class MultiClientLauncher {
 	        String iterStr = stdin.readLine().trim();
 	        int iterations = Integer.parseInt(iterStr);
 	        
+	        System.out.println("Saturation threshold :");
+	        String satStr = stdin.readLine().trim();
+	        long threshold = Long.parseLong(satStr);
+	        
 	        ArrayList<ClientThread> clients = new ArrayList<ClientThread>();
 	        ArrayList<Thread> threads = new ArrayList<Thread>();
-	        Vector<Long> executionTime = new Vector<Long>();
+	        Vector<Long> means = new Vector<Long>();
+	        
+	        Vector<Long> veryMean = new Vector<Long>();
 	        
 	        
-	        System.out.println("Creating clients..");
-	        // Create clients
-	        for (int j=0; j<numClients; j++) {
-	        	ClientThread client = new ClientThread(testType, iterations, executionTime, tps, numClients, serviceName, serviceHost, servicePort);
-	        	clients.add(client);
-	        }
-	        System.out.println("Launching clients..");
-	        // Launch clients
-	        for (int j=0; j<numClients; j++) {
-	        	Thread t = new Thread(clients.get(j));
-	        	threads.add(t);
-	        	t.start();
-	        }
-	        // Wait for all threads to finish
-	        for (int j=0; j<numClients; j++) {
-	        	threads.get(j).join();
-	        }
-	        System.out.println("Received " + executionTime.size() + " results:");
-	        for (long t : executionTime) {
-	        	System.out.print(t + ", ");
-	        }
+	        
+	        boolean saturated = false;
+	        while (!saturated){
+	        	System.out.println("Creating clients..");
+		        // Create clients
+		        for (int j=0; j<numClients; j++) {
+		        	ClientThread client = new ClientThread(testType, iterations, means, tps, numClients, serviceName, serviceHost, servicePort);
+		        	clients.add(client);
+		        }
+		        System.out.println("Launching clients..");
+		        // Launch clients
+		        for (int j=0; j<numClients; j++) {
+		        	Thread t = new Thread(clients.get(j));
+		        	threads.add(t);
+		        	t.start();
+		        }
+		        // Wait for all threads to finish
+		        for (int j=0; j<numClients; j++) {
+		        	threads.get(j).join();
+		        }
+		        System.out.println("Received " + means.size() + " results:");
+		        for (long t : means) {
+		        	System.out.print(t + ", ");
+		        }
+				
+		        Long last = veryMean.elementAt(veryMean.size()-1);
+		        Long sum = means.stream().reduce(0L, (acc,y)->acc+y);
+		        veryMean.add(sum/means.size());
+		        means.clear();
+		        clients.clear();
+		        threads.clear();
+		        
+		        long difference = last-sum/means.size();
+		        saturated = difference < threshold;
+			}
+	        
+	        
+	        
 	        System.out.println("");
-	        executionTime.clear();
-	        clients.clear();
-	        threads.clear();
+	        
 	        
 //	        Thread resetter = (new Thread(new Resetter(serviceName, serviceHost, servicePort)));
 //	        resetter.start();
@@ -97,15 +118,15 @@ class ClientThread extends WSClient implements Runnable {
 	int tps;
 	int numClients;
 	long waitTime;
-	Vector<Long> executionTimes;
+	Vector<Long> means;
 	Random rand;
 	
-	public ClientThread(int testType, int iterations, Vector<Long> executionTimes, int tps, int numClients, String serviceName, String serviceHost, int servicePort) throws Exception {
+	public ClientThread(int testType, int iterations, Vector<Long> means, int tps, int numClients, String serviceName, String serviceHost, int servicePort) throws Exception {
 		super(serviceName, serviceHost, servicePort);
 		this.tps = tps;
 		this.numClients = numClients;
 		this.waitTime = (numClients / tps) * 1000;
-		this.executionTimes = executionTimes;
+		this.means = means;
 		this.iterations = iterations;
 		this.testType = testType;
 		this.rand = new Random();
@@ -146,7 +167,7 @@ class ClientThread extends WSClient implements Runnable {
 					System.out.println("WARNING: System cannot handle " + tps + " transactions per second!");
 					return;
 				} else {
-					executionTimes.add(totalTime);
+					means.add(totalTime);
 					Thread.sleep(sleepTime);
 				}
 			}
@@ -221,6 +242,8 @@ class ClientThread extends WSClient implements Runnable {
 			for (int i = 10; i < totalTimes.length-10; i++) {
 				writer.println(totalTimes[i]+",");
 			}
+			means.add(totalTime/ iterations);
+			
 			writer.flush();
 			writer.close();
 			
