@@ -51,6 +51,14 @@ public class MultiClientLauncher {
 	        String satStr = stdin.readLine().trim();
 	        long threshold = Long.parseLong(satStr);
 	        
+	        System.out.println("Increase clients(1) or throughput(2) :");
+	        String choice = stdin.readLine().trim();
+	        int chosen = Integer.parseInt(choice);
+	        
+	        System.out.println("Increment amount :");
+	        String amount = stdin.readLine().trim();
+	        int theAmount = Integer.parseInt(amount);
+	        
 	        ArrayList<ClientThread> clients = new ArrayList<ClientThread>();
 	        ArrayList<Thread> threads = new ArrayList<Thread>();
 	        Vector<Long> means = new Vector<Long>();
@@ -103,6 +111,12 @@ public class MultiClientLauncher {
 			        means.clear();
 			        clients.clear();
 			        threads.clear();
+				}
+				if(chosen == 1){
+					numClients+=theAmount;
+				}
+				else{
+					tps += theAmount;
 				}
 			}
 	        
