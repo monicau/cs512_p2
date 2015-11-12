@@ -69,7 +69,6 @@ public class TransactionManager {
 						}
 						System.out.println("TM:: Unlock all locks held by this transaction: " + success); 
 						delist(txnID);
-						timeAlive.remove(txnID);
 					}
 				}
 				try {

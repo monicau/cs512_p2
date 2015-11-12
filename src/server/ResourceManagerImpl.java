@@ -695,20 +695,30 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			for (ItemHistory entry : history) {
 				switch (entry.getAction()) {
 				case ADDED:
-					Trace.info("RM:: Remove added item " + entry.getReservedItemKey());
-					removeData(transactionId, entry.getReservedItemKey());
+					try {
+						Trace.info("RM:: Remove added item " + entry.getReservedItemKey());
+						removeData(transactionId, entry.getReservedItemKey());
+					} catch (Exception e) {
+						Trace.info("Error removing added item.");
+					}
+					
 					break;
 				case DELETED:
 					Trace.info("RM:: Adding back deleted item " + entry.getReservedItemKey());
 					writeData(transactionId, entry.getReservedItemKey(), entry.getItem());
 					break;
 				case RESERVED:
-					ReservableItem rmItem = (ReservableItem) readData(transactionId, entry.getReservedItemKey());
-					Trace.info("RM:: Unreserving item " + rmItem.getKey());
-					synchronized(rmItem) {
-						rmItem.setCount(rmItem.getCount() + 1);
-						rmItem.setReserved(rmItem.getReserved() - 1);
-		        	}
+					try {
+						ReservableItem rmItem = (ReservableItem) readData(transactionId, entry.getReservedItemKey());
+						
+						Trace.info("RM:: Unreserving item " + rmItem.getKey());
+						synchronized(rmItem) {
+							rmItem.setCount(rmItem.getCount() + 1);
+							rmItem.setReserved(rmItem.getReserved() - 1);
+			        	}
+					} catch (Exception e) {
+						Trace.info("Fail to remove reservation. Doesn't exist.");
+					}
 					break;
 				case UPDATED:
 					ReservableItem oldItem = (ReservableItem) entry.getItem();
