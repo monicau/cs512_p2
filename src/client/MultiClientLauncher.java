@@ -270,7 +270,7 @@ class ClientThread extends WSClient implements Runnable {
 	private void multipleRM() {
 		try {
 			
-			int iterations_todo = iterations + 10; // include warm-up / cool-down
+			int iterations_todo = iterations + 20; // include warm-up / cool-down
 			
 			final int[] r1s = new int[iterations_todo];
 			final int[] r2s = new int[iterations_todo];
@@ -306,14 +306,14 @@ class ClientThread extends WSClient implements Runnable {
 				submission[i].join();
 			}
 			
-			long[] goodOldTimes = Arrays.copyOfRange(totalTimes, 5, 5+iterations);
+			long[] goodOldTimes = Arrays.copyOfRange(totalTimes, 10, 10+iterations);
 			long totalTime = Arrays.stream(goodOldTimes).reduce(0, (x,y) -> x+y );
 			File f = new File("totalTimes-c"+numClients+"l"+tps+".csv");
 			PrintWriter writer = new PrintWriter(f);
 			writer.println("Average:");
 			writer.println(totalTime+",\n");
 			writer.println("Raw Data:");
-			for (int i = 5; i < totalTimes.length-5; i++) {
+			for (int i = 10; i < totalTimes.length-10; i++) {
 				writer.println(totalTimes[i]+",");
 			}
 			means.add(totalTime/ iterations);
