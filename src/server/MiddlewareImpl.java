@@ -138,7 +138,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			} catch (FileNotFoundException e) {
 				Trace.info("ERROR: File not found!");
 			}
-			tm = new TransactionManager(this, proxyFlight, proxyCar, proxyRoom, 30000);
+			tm = new TransactionManager(this, proxyFlight, proxyCar, proxyRoom, 60000);
 		} 
 		else {
 			// sockets
