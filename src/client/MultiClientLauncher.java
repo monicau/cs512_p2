@@ -191,52 +191,28 @@ class ClientThread extends WSClient implements Runnable {
 	// Do transactions that only access 1 RM
 	private void singleRM() {
 		try {
-			
-			int iterations_todo = iterations + 10; // include warm-up / cool-down
-			
-			final int[] r1s = new int[iterations_todo];
-			final int[] r2s = new int[iterations_todo];
-			final String[] r3s = new String[iterations_todo];
-			final String[] r4s = new String[iterations_todo];
-			
-			final long[] totalTimes = new long[iterations_todo];
-			long[] randTimes = new long[iterations_todo];
-			
-			Thread[] submission = new Thread[iterations_todo];
-			
-			for (int i = 0; i < iterations_todo; i++) {
-				r1s[i] = rand.nextInt(10000);
-				r2s[i] = rand.nextInt(10000);
-				r3s[i] = Integer.toString(rand.nextInt(10000));
-				r4s[i] = Integer.toString(rand.nextInt(10000));
-				randTimes[i] = (long) (rand.nextGaussian() * waitTime/10); //+/- 10% of waittime
-			
-				final ResourceManager rm = proxy;
-				
-				final int count = i;
-				submission[i] = new Thread(()->{
-					sclient(count, r1s, r2s, r3s, r4s, totalTimes);
-				});
-			}			
-			for (int i=0; i < iterations_todo; i++) {
-				submission[i].start();
-				System.out.println("Running submission "+i);
-				Thread.sleep(waitTime+randTimes[i]);
-			}
-
-			for (int i = 0; i < submission.length; i++) {
-				submission[i].join();
-			}
-			
-			long[] goodOldTimes = Arrays.copyOfRange(totalTimes, 5, 5+iterations);
-			long totalTime = Arrays.stream(goodOldTimes).reduce(0, (x,y) -> x+y );
-			File f = new File("totalTimes-c"+numClients+"l"+tps+".csv");
-			PrintWriter writer = new PrintWriter(f);
-			writer.println("Average:");
-			writer.println(totalTime/iterations+",\n");
-			writer.println("Raw Data:");
-			for (int i = 5; i < totalTimes.length-5; i++) {
-				writer.println(totalTimes[i]+",");
+			for (int i=0; i < iterations; i++) {
+				int r1 = rand.nextInt(10000);
+				int r2 = rand.nextInt(10000);
+				int r3 = rand.nextInt(10000);
+				long startTime = System.nanoTime();
+				int id = proxy.start();
+				proxy.addFlight(id, r1, r2, r3);
+				proxy.addFlight(id, r2, r2, r3);
+				proxy.addFlight(id, r3, r2, r3);
+				proxy.commit(id);
+				long endTime = System.nanoTime();
+				totalTime = (endTime - startTime) / 1000000;
+				System.out.println("Txn " + id + " took " + totalTime);
+				long sleepTime = waitTime - totalTime;
+				if (sleepTime < 0) {
+					System.out.println("WARNING: System cannot handle " + tps + " transactions per second!");
+					return;
+				} else {
+					means.add(totalTime/iterations);
+					totalTime = 0;
+					Thread.sleep(sleepTime);
+				}
 			}
 			means.add(totalTime/ iterations);
 			

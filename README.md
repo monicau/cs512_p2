@@ -26,7 +26,7 @@ Access via: http://HOSTNAME:PORT/rm/rm
 
 will launch middleware and it will use default values to find the resource managers.  By default, middleware's port is 8080.
 
-```ant server -Dservice.rm1.host=HOSTNAME -Dservice.rm1.port=PORT -Dservice.rm2.host=HOSTNAME -Dservice.rm2.port=PORT -Dservice.rm3.host=HOSTNAME -Dservice.rm3.port=PORT```
+```ant server -Dservice.host=MYHOSTNAME -Dservice.rm1.host=HOSTNAME -Dservice.rm1.port=PORT -Dservice.rm2.host=HOSTNAME -Dservice.rm2.port=PORT -Dservice.rm3.host=HOSTNAME -Dservice.rm3.port=PORT```
 
 will launch middleware with specified resource manager hostnames and port numbers.
 
@@ -38,9 +38,13 @@ Access it via: http://HOSTNAME:PORT/mw/service
 where HOST is the hostname/IP of the middleware and PORT is the port that the middleware uses.
 
 ###Performance analysis
-```ant analysis -Dservice.host=HOST -Dservice.port=PORT```
+```ant analysis1 -Dservice.host=HOST -Dservice.port=PORT```
 
 for single client system analysis, launch this client.
+
+```ant analysis2 -Dservice.host=HOST -Dservice.port=PORT```
+
+for multiple client system analysis, launch this client.
 
 
 --
