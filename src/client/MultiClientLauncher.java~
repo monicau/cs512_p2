@@ -233,7 +233,7 @@ class ClientThread extends WSClient implements Runnable {
 			File f = new File("totalTimes-c"+numClients+"l"+tps+".csv");
 			PrintWriter writer = new PrintWriter(f);
 			writer.println("Average:");
-			writer.println(totalTime/iterations+",\n");
+			writer.println(totalTime+",\n");
 			writer.println("Raw Data:");
 			for (int i = 5; i < totalTimes.length-5; i++) {
 				writer.println(totalTimes[i]+",");
