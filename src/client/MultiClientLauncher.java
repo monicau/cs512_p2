@@ -175,19 +175,19 @@ class ClientThread extends WSClient implements Runnable {
 	private void singleRM() {
 		long totalTime = 0;
 		try {
-			int r1 = rand.nextInt(1000);
-			int r2 = rand.nextInt(1000);
-			int r3 = rand.nextInt(1000);
 			for (int i=0; i < iterations; i++) {
+				int r1 = rand.nextInt(10000);
+				int r2 = rand.nextInt(10000);
+				int r3 = rand.nextInt(10000);
 				long startTime = System.nanoTime();
 				int id = proxy.start();
 				proxy.addFlight(id, r1, r2, r3);
-				proxy.addFlight(id, r1, r2, r3);
-				proxy.addFlight(id, r1, r2, r3);
+				proxy.addFlight(id, r2, r2, r3);
+				proxy.addFlight(id, r3, r2, r3);
 				proxy.commit(id);
 				long endTime = System.nanoTime();
-				totalTime += (endTime - startTime) / 1000000;
-				System.out.println("Txn " + id + " added flight-" + r1 + " and committed. Took " + totalTime);
+				totalTime = (endTime - startTime) / 1000000;
+				System.out.println("Txn " + id + " took " + totalTime);
 				long sleepTime = waitTime - totalTime;
 				if (sleepTime < 0) {
 					System.out.println("WARNING: System cannot handle " + tps + " transactions per second!");

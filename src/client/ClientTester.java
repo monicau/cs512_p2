@@ -1,8 +1,11 @@
 package client;
 
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.util.Random;
 import java.util.Vector;
 
@@ -43,7 +46,7 @@ public class ClientTester extends WSClient {
              System.out.println("How many loops?");
              String iterations = stdin.readLine();
              iterations = iterations.trim();
-             int iterationsInt = Integer.parseInt(iterations);
+             int iterationsInt = Integer.parseInt(iterations) + 20;
              Vector<Long> executionTime = new Vector<Long>();
              switch (commandInt) {
              case 1:
@@ -75,12 +78,16 @@ public class ClientTester extends WSClient {
 		            	 }
 		            	 long endTime = System.nanoTime();
 		            	 long duration = (endTime - startTime) / 1000000;
-		            	 executionTime.add(duration);
+		            	 if (i>9 && i<(iterationsInt-10)) {
+		            		 // Add execution time if we are not in warm up nor cool down
+		            		 executionTime.add(duration);
+		            	 }
 	            	 } catch (Exception e) {
 	            		 System.out.println("Deadlock!  Too bad.");
 	            	 }
             	 }
             	 printTime(executionTime);
+            	 printAverage(executionTime);
             	 break;
              case 2:
             	 System.out.println("Multiple RM test");
@@ -114,13 +121,17 @@ public class ClientTester extends WSClient {
 		            	 }
 		            	 long endTime = System.nanoTime();
 		            	 long duration = (endTime - startTime) / 1000000;
-		            	 executionTime.add(duration);
+		            	 if (i>9 && i<(iterationsInt-10)) {
+		            		 // Add execution time if we are not in warm up nor cool down
+		            		 executionTime.add(duration);
+		            	 }
 	            	 } catch (Exception e) {
 	            		 System.out.println("Error!  Too bad.");
 	            		 e.printStackTrace();
 	            	 }
             	 }
             	 printTime(executionTime);
+            	 printAverage(executionTime);
             	 break;
              }
          }
@@ -135,5 +146,13 @@ public class ClientTester extends WSClient {
 		for (long t : v) {
 			System.out.print(t + ", ");
 		}
+	}
+	private void printAverage(Vector<Long> v) {
+		long sum = 0;
+		for (long t : v) {
+			sum += t;
+		}
+		long average = sum/v.size();
+		System.out.println("Average: "+ average);
 	}
 }
