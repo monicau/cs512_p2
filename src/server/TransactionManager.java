@@ -42,12 +42,14 @@ public class TransactionManager {
 					int txnID = livedFor.getKey();
 					int timealive = livedFor.getValue();
 					Vector<RM> vector = activeRMs.get(txnID);
-					if(timealive > ttl){
+					timeAlive.replace(txnID, (timealive-500));
+					System.out.println("Sweeper checking txn " + txnID + ", timealive: " + timealive + " vs ttl: " + ttl);
+					if(timealive < ttl){
 						boolean success = true;
 						for (RM rm : vector) {
 							switch (rm) {
 							case CUSTOMER:
-								success &= mw.abortCustomer(txnID) && mw.unlock(txnID) ;
+								success &= mw.abortCustomer(txnID) && mw.unlock(txnID);
 								break;
 							case FLIGHT:
 								// abort transaction and unlock in one message
@@ -65,6 +67,7 @@ public class TransactionManager {
 						}
 						System.out.println("TM:: Unlock all locks held by this transaction: " + success); 
 						delist(txnID);
+						timeAlive.remove(txnID);
 					}
 				}
 				try {
