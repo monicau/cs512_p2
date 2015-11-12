@@ -257,7 +257,9 @@ class ClientThread extends WSClient implements Runnable {
 				Thread.sleep(waitTime+randTimes[i]);
 			}
 
-			
+			for (int i = 0; i < submission.length; i++) {
+				submission[i].join();
+			}
 			
 			long[] goodOldTimes = Arrays.copyOfRange(totalTimes, 10, 10+iterations);
 			long totalTime = Arrays.stream(goodOldTimes).reduce(0, (x,y) -> x+y );
