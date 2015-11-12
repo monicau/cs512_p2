@@ -995,9 +995,15 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public boolean shutdown() {
 		tm.stopHeartbeatSweeper();
 		Set<Integer> transactionsIds = new HashSet<>(txnHistory.keySet()); //prevent concurrent modification of map
-		return transactionsIds.stream()
+		boolean r = transactionsIds.stream()
 										.map(txn -> abort(txn))
 										.reduce(true, (x,y)-> x&&y);
+		proxyFlight.shutdown();
+		proxyCar.shutdown();
+		proxyRoom.shutdown();
+		// Schedule a shutdown
+		new TimedExit();
+		return r;
 	}
 	
 	public boolean abortCustomer(int transactionId) {
