@@ -193,7 +193,8 @@ class ClientThread extends WSClient implements Runnable {
 					System.out.println("WARNING: System cannot handle " + tps + " transactions per second!");
 					return;
 				} else {
-					means.add(totalTime);
+					means.add(totalTime/iterations);
+					totalTime = 0;
 					Thread.sleep(sleepTime);
 				}
 			}
