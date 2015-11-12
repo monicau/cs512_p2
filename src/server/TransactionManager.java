@@ -44,25 +44,27 @@ public class TransactionManager {
 					Vector<RM> vector = activeRMs.get(txnID);
 					timeAlive.replace(txnID, (timealive-500));
 					System.out.println("Sweeper checking txn " + txnID + ", timealive: " + timealive + " vs ttl: " + ttl);
-					if(timealive < ttl){
+					if(timealive <= 0){
 						boolean success = true;
-						for (RM rm : vector) {
-							switch (rm) {
-							case CUSTOMER:
-								success &= mw.abortCustomer(txnID) && mw.unlock(txnID);
-								break;
-							case FLIGHT:
-								// abort transaction and unlock in one message
-								success &= proxyFlight.abort(txnID);
-								break;
-							case CAR:
-								success &= proxyCar.abort(txnID);
-								break;
-							case ROOM:
-								success &= proxyRoom.abort(txnID);
-								break;
-							default:
-								break;
+						if (vector != null) {
+							for (RM rm : vector) {
+								switch (rm) {
+								case CUSTOMER:
+									success &= mw.abortCustomer(txnID) && mw.unlock(txnID);
+									break;
+								case FLIGHT:
+									// abort transaction and unlock in one message
+									success &= proxyFlight.abort(txnID);
+									break;
+								case CAR:
+									success &= proxyCar.abort(txnID);
+									break;
+								case ROOM:
+									success &= proxyRoom.abort(txnID);
+									break;
+								default:
+									break;
+								}
 							}
 						}
 						System.out.println("TM:: Unlock all locks held by this transaction: " + success); 
