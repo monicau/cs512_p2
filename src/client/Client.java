@@ -3,6 +3,7 @@ package client;
 import java.util.*;
 import java.io.*;
 
+import TransactionManager.InvalidTransactionException;
 import lockmanager.DeadlockException;
 
 
@@ -28,7 +29,7 @@ public class Client extends WSClient {
 	
 	        client.run();
         } catch(Exception e) {
-            e.printStackTrace();
+            //e.printStackTrace();
         }
     }
 
@@ -104,7 +105,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                 
@@ -131,7 +132,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                 
@@ -158,7 +159,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                 
@@ -177,7 +178,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                 
@@ -200,7 +201,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                 
@@ -223,7 +224,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                 
@@ -246,7 +247,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                 
@@ -269,7 +270,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                 
@@ -289,7 +290,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                 
@@ -310,7 +311,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                 
@@ -331,7 +332,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                 
@@ -352,7 +353,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;               
                 
@@ -373,7 +374,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+//                    //e.printStackTrace();
                 }
                 break;
                 
@@ -394,7 +395,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    ////e.printStackTrace();
                 }                
                 break;
 
@@ -415,7 +416,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                 
@@ -440,7 +441,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                 
@@ -465,7 +466,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                 
@@ -490,7 +491,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                 
@@ -525,7 +526,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                             
@@ -554,7 +555,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
                 
@@ -571,7 +572,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
             case 24:  //Commit txn
@@ -588,7 +589,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
             case 25:  //Abort txn
@@ -605,7 +606,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
             case 26:  //Shutdown
@@ -621,7 +622,7 @@ public class Client extends WSClient {
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");
                     System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
                 break;
             default:

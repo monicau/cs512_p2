@@ -30,6 +30,7 @@ import server.ItemHistory.Action;
 import server.ItemHistory.ItemType;
 import lockmanager.DeadlockException;
 import lockmanager.LockManager;
+import TransactionManager.InvalidTransactionException;
 
 import com.google.gson.Gson;
 
@@ -290,7 +291,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	// Public version
-	public int getPrice(int id, String key) {
+	public int getPrice(int id, String key) throws InvalidTransactionException {
 		return queryPrice(id, key);
 	}
 

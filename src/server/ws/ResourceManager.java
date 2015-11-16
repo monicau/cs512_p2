@@ -21,6 +21,7 @@ import java.util.*;
 import javax.jws.WebService;
 import javax.jws.WebMethod;
 
+import TransactionManager.InvalidTransactionException;
 import server.Customer;
 import server.RMItem;
 import lockmanager.DeadlockException;
@@ -31,7 +32,7 @@ public interface ResourceManager {
 	
 	// General operations //
 	@WebMethod
-	 public int getPrice(int id, String key);
+	 public int getPrice(int id, String key) throws InvalidTransactionException;
 
     // Flight operations //
     
@@ -43,7 +44,7 @@ public interface ResourceManager {
      * @return success.
      */
     @WebMethod
-    public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice) throws DeadlockException; 
+    public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice) throws DeadlockException, InvalidTransactionException; 
 
     /**
      * Delete the entire flight.
@@ -51,17 +52,18 @@ public interface ResourceManager {
      * reservation on the flight, then the flight cannot be deleted.
      *
      * @return success.
+     * @throws InvalidTransactionException 
      */   
     @WebMethod
-    public boolean deleteFlight(int id, int flightNumber) throws DeadlockException; 
+    public boolean deleteFlight(int id, int flightNumber) throws DeadlockException, InvalidTransactionException; 
 
     /* Return the number of empty seats in this flight. */
     @WebMethod
-    public int queryFlight(int id, int flightNumber) throws DeadlockException; 
+    public int queryFlight(int id, int flightNumber) throws DeadlockException, InvalidTransactionException; 
 
     /* Return the price of a seat on this flight. */
     @WebMethod
-    public int queryFlightPrice(int id, int flightNumber) throws DeadlockException; 
+    public int queryFlightPrice(int id, int flightNumber) throws DeadlockException, InvalidTransactionException; 
 
 
     // Car operations //
@@ -71,21 +73,21 @@ public interface ResourceManager {
      * instead of a flight number.
      */
     @WebMethod
-    public boolean addCars(int id, String location, int numCars, int carPrice) throws DeadlockException; 
+    public boolean addCars(int id, String location, int numCars, int carPrice) throws DeadlockException, InvalidTransactionException; 
     
     /* Delete all cars from a location.
      * It should not succeed if there are reservations for this location.
      */		    
     @WebMethod
-    public boolean deleteCars(int id, String location) throws DeadlockException; 
+    public boolean deleteCars(int id, String location) throws DeadlockException, InvalidTransactionException; 
 
     /* Return the number of cars available at this location. */
     @WebMethod
-    public int queryCars(int id, String location) throws DeadlockException; 
+    public int queryCars(int id, String location) throws DeadlockException, InvalidTransactionException; 
 
     /* Return the price of a car at this location. */
     @WebMethod
-    public int queryCarsPrice(int id, String location) throws DeadlockException; 
+    public int queryCarsPrice(int id, String location) throws DeadlockException, InvalidTransactionException; 
 
 
     // Room operations //
@@ -95,40 +97,40 @@ public interface ResourceManager {
      * instead of a flight number.
      */
     @WebMethod
-    public boolean addRooms(int id, String location, int numRooms, int roomPrice) throws DeadlockException; 			    
+    public boolean addRooms(int id, String location, int numRooms, int roomPrice) throws DeadlockException, InvalidTransactionException; 			    
 
     /* Delete all rooms from a location.
      * It should not succeed if there are reservations for this location.
      */
     @WebMethod
-    public boolean deleteRooms(int id, String location) throws DeadlockException; 
+    public boolean deleteRooms(int id, String location) throws DeadlockException, InvalidTransactionException; 
 
     /* Return the number of rooms available at this location. */
     @WebMethod
-    public int queryRooms(int id, String location) throws DeadlockException; 
+    public int queryRooms(int id, String location) throws DeadlockException, InvalidTransactionException; 
 
     /* Return the price of a room at this location. */
     @WebMethod
-    public int queryRoomsPrice(int id, String location) throws DeadlockException; 
+    public int queryRoomsPrice(int id, String location) throws DeadlockException, InvalidTransactionException; 
 
 
     // Customer operations //
         
     /* Create a new customer and return their unique identifier. */
     @WebMethod
-    public int newCustomer(int id) throws DeadlockException; 
+    public int newCustomer(int id) throws DeadlockException, InvalidTransactionException; 
     
     /* Create a new customer with the provided identifier. */
     @WebMethod
-    public boolean newCustomerId(int id, int customerId) throws DeadlockException;
+    public boolean newCustomerId(int id, int customerId) throws DeadlockException, InvalidTransactionException;
 
     /* Remove this customer and all their associated reservations. */
     @WebMethod
-    public boolean deleteCustomer(int id, int customerId) throws DeadlockException; 
+    public boolean deleteCustomer(int id, int customerId) throws DeadlockException, InvalidTransactionException; 
 
     /* Return a bill. */
     @WebMethod
-    public String queryCustomerInfo(int id, int customerId) throws DeadlockException; 
+    public String queryCustomerInfo(int id, int customerId) throws DeadlockException, InvalidTransactionException; 
     
     /* Resource manager's reserve method */
     @WebMethod
@@ -140,20 +142,20 @@ public interface ResourceManager {
     
     /* Reserve a seat on this flight. */
     @WebMethod
-    public boolean reserveFlight(int id, int customerId, int flightNumber) throws DeadlockException; 
+    public boolean reserveFlight(int id, int customerId, int flightNumber) throws DeadlockException, InvalidTransactionException; 
 
     /* Reserve a car at this location. */
     @WebMethod
-    public boolean reserveCar(int id, int customerId, String location) throws DeadlockException; 
+    public boolean reserveCar(int id, int customerId, String location) throws DeadlockException, InvalidTransactionException; 
 
     /* Reserve a room at this location. */
     @WebMethod
-    public boolean reserveRoom(int id, int customerId, String location) throws DeadlockException; 
+    public boolean reserveRoom(int id, int customerId, String location) throws DeadlockException, InvalidTransactionException; 
 
     /* Reserve an itinerary. */
     @WebMethod
     public boolean reserveItinerary(int id, int customerId, Vector flightNumbers, 
-                                    String location, boolean car, boolean room) throws DeadlockException;
+                                    String location, boolean car, boolean room) throws DeadlockException, InvalidTransactionException;
     
     /* Start a new transaction and return its id. */
     @WebMethod
@@ -161,11 +163,11 @@ public interface ResourceManager {
     
     /* Attempt to commit the given transaction; return true upon success. */
     @WebMethod
-    public boolean commit(int transactionId);
+    public boolean commit(int transactionId) throws InvalidTransactionException;
     
     /* Abort the given transaction */
     @WebMethod
-    public boolean abort(int transactionId);
+    public boolean abort(int transactionId) throws InvalidTransactionException;
     
     /* Shut down gracefully */
     @WebMethod
