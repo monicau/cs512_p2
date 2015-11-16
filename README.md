@@ -1,6 +1,8 @@
-#cs512 Project deliverable 2
+#cs512 Project deliverable 2 & 3
 
-Add transactions!
+2: Add transactions!
+
+3: Add 2 phase commit!
 
 ##Prerequisites
 - JDK (8+)
@@ -46,6 +48,22 @@ for single client system analysis, launch this client.
 
 for multiple client system analysis, launch this client.
 
+###How to crash things at client
+Crash middleware with
+
+```crashmw```
+
+Crash flight resource manager with
+
+```crashrm,flight```
+
+Crash room resource manager with
+
+```crashrm,room```
+
+Crash car resource manager with
+
+```crashrm,car```
 
 --
 
