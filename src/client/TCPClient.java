@@ -365,4 +365,16 @@ public class TCPClient extends TCPServiceRequest implements ResourceManager{
 		// TODO Auto-generated method stub
 	}
 
+	@Override
+	public boolean crashMW() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean crashRM(int id) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
 }

@@ -775,4 +775,15 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	public RMItem deleteFromStorage(int id, String key) {
 		return removeData(id, key);
 	}
+
+	@Override
+	public boolean crashMW() {
+		return false;
+	}
+	
+	@Override
+	public boolean crashRM(int id) {
+		new TimedExit();
+		return true;
+	}
 }

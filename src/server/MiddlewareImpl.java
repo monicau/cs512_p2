@@ -391,7 +391,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		try {
 			r = proxyFlight.addFlight(id, flightNumber, numSeats, flightPrice);
 		} catch (Exception e) {
-			throw new DeadlockException(id, e.getMessage());
+			if (e.getMessage().contains("deadlock")) {
+				throw new DeadlockException(id, e.getMessage());
+			} else {
+				throw new InvalidTransactionException(e.getMessage());
+			}
 		}
 		Trace.info("MW:: addFlight succeeded:" + Boolean.toString(r));
 		return r;
@@ -405,7 +409,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		try {
 			return proxyFlight.deleteFlight(id, flightNumber);
 		} catch (Exception e) {
-			throw new DeadlockException(id, e.getMessage());
+			if (e.getMessage().contains("deadlock")) {
+				throw new DeadlockException(id, e.getMessage());
+			} else {
+				throw new InvalidTransactionException(e.getMessage());
+			}
 		}
 	}
 
@@ -418,7 +426,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		try {
 			return proxyFlight.queryFlight(id, flightNumber);
 		} catch (Exception e) {
-			throw new DeadlockException(id, e.getMessage());
+			if (e.getMessage().contains("deadlock")) {
+				throw new DeadlockException(id, e.getMessage());
+			} else {
+				throw new InvalidTransactionException(e.getMessage());
+			}
 		}
 	}
 
@@ -430,7 +442,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		try {
 			return proxyFlight.queryFlightPrice(id, flightNumber);
 		} catch (Exception e) {
-			throw new DeadlockException(id, e.getMessage());
+			if (e.getMessage().contains("deadlock")) {
+				throw new DeadlockException(id, e.getMessage());
+			} else {
+				throw new InvalidTransactionException(e.getMessage());
+			}
 		}
 	}
 
@@ -487,7 +503,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		try {
 			r = proxyCar.addCars(id, location, numCars, carPrice);
 		} catch (Exception e) {
-			throw new DeadlockException(id, e.getMessage());
+			if (e.getMessage().contains("deadlock")) {
+				throw new DeadlockException(id, e.getMessage());
+			} else {
+				throw new InvalidTransactionException(e.getMessage());
+			}
 		}
 		Trace.info("MW::addCar succeeded: " + Boolean.toString(r));
 		return r;
@@ -502,7 +522,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		try {
 			return proxyCar.deleteCars(id, location);
 		} catch (Exception e) {
-			throw new DeadlockException(id, e.getMessage());
+			if (e.getMessage().contains("deadlock")) {
+				throw new DeadlockException(id, e.getMessage());
+			} else {
+				throw new InvalidTransactionException(e.getMessage());
+			}
 		}
 	}
 
@@ -515,7 +539,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		try {
 			return proxyCar.queryCars(id, location);
 		} catch (Exception e) {
-			throw new DeadlockException(id, e.getMessage());
+			if (e.getMessage().contains("deadlock")) {
+				throw new DeadlockException(id, e.getMessage());
+			} else {
+				throw new InvalidTransactionException(e.getMessage());
+			}
 		}
 	}
 
@@ -528,7 +556,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		try {
 			return proxyCar.queryCarsPrice(id, location);
 		} catch (Exception e) {
-			throw new DeadlockException(id, e.getMessage());
+			if (e.getMessage().contains("deadlock")) {
+				throw new DeadlockException(id, e.getMessage());
+			} else {
+				throw new InvalidTransactionException(e.getMessage());
+			}
 		}
 	}
 
@@ -549,7 +581,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		try {
 			r = proxyRoom.addRooms(id, location, numRooms, roomPrice);
 		} catch (Exception e) {
-			throw new DeadlockException(id, e.getMessage());
+			if (e.getMessage().contains("deadlock")) {
+				throw new DeadlockException(id, e.getMessage());
+			} else {
+				throw new InvalidTransactionException(e.getMessage());
+			}
 		}
 		Trace.info("MW::addRooms succeeded: " + Boolean.toString(r));
 		return r;
@@ -564,7 +600,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		try {
 			return proxyRoom.deleteRooms(id, location);
 		} catch (Exception e) {
-			throw new DeadlockException(id, e.getMessage());
+			if (e.getMessage().contains("deadlock")) {
+				throw new DeadlockException(id, e.getMessage());
+			} else {
+				throw new InvalidTransactionException(e.getMessage());
+			}
 		}
 	}
 
@@ -577,7 +617,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		try {
 			return proxyRoom.queryRooms(id, location);
 		} catch (Exception e) {
-			throw new DeadlockException(id, e.getMessage());
+			if (e.getMessage().contains("deadlock")) {
+				throw new DeadlockException(id, e.getMessage());
+			} else {
+				throw new InvalidTransactionException(e.getMessage());
+			}
 		}
 	}
 
@@ -590,7 +634,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		try {
 			return proxyRoom.queryRoomsPrice(id, location);
 		} catch (Exception e) {
-			throw new DeadlockException(id, e.getMessage());
+			if (e.getMessage().contains("deadlock")) {
+				throw new DeadlockException(id, e.getMessage());
+			} else {
+				throw new InvalidTransactionException(e.getMessage());
+			}
 		}
 	}
 
@@ -774,7 +822,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			tm.enlist(id, RM.FLIGHT);
 			result = proxyFlight.reserveItem("flight", id, flightNumber, null);
 		} catch (Exception e) {
-			throw new DeadlockException(id, e.getMessage());
+			if (e.getMessage().contains("deadlock")) {
+				throw new DeadlockException(id, e.getMessage());
+			} else {
+				throw new InvalidTransactionException(e.getMessage());
+			}
 		}
 		if (result == true) {
 			//Create a backup of customer and reservation before modifying it
@@ -784,7 +836,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			try {
 				cust.reserve(Flight.getKey(flightNumber), String.valueOf(flightNumber), proxyFlight.getPrice(id, Flight.getKey(flightNumber)));
 			} catch (Exception e) {
-				throw new DeadlockException(id, e.getMessage());
+				if (e.getMessage().contains("deadlock")) {
+					throw new DeadlockException(id, e.getMessage());
+				} else {
+					throw new InvalidTransactionException(e.getMessage());
+				}
 			}
 			writeData(id, cust.getKey(), cust);
 		}
@@ -813,7 +869,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			tm.enlist(id, RM.CAR);
 			result = proxyCar.reserveItem("car", id, -1, location);
 		} catch (Exception e) {
-			throw new DeadlockException(id, e.getMessage());
+			if (e.getMessage().contains("deadlock")) {
+				throw new DeadlockException(id, e.getMessage());
+			} else {
+				throw new InvalidTransactionException(e.getMessage());
+			}
 		}
 		if (result == true) {
 			//Create a backup of customer and reservation before modifying it
@@ -823,7 +883,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			try {
 				cust.reserve(Car.getKey(location), location, proxyCar.getPrice(id, Car.getKey(location)));
 			} catch (Exception e) {
-				throw new DeadlockException(id, e.getMessage());
+				if (e.getMessage().contains("deadlock")) {
+					throw new DeadlockException(id, e.getMessage());
+				} else {
+					throw new InvalidTransactionException(e.getMessage());
+				}
 			}
 			writeData(id, cust.getKey(), cust);
 		}
@@ -852,7 +916,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			tm.enlist(id, RM.ROOM);
 			result = proxyRoom.reserveItem("room", id, -1, location);
 		} catch (Exception e) {
-			throw new DeadlockException(id, e.getMessage());
+			if (e.getMessage().contains("deadlock")) {
+				throw new DeadlockException(id, e.getMessage());
+			} else {
+				throw new InvalidTransactionException(e.getMessage());
+			}
 		}
 		if (result == true) {
 			//Create a backup of customer and reservation before modifying it
@@ -862,7 +930,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			try {
 				cust.reserve(Room.getKey(location), location, proxyRoom.getPrice(id, Room.getKey(location)));
 			} catch (Exception e) {
-				throw new DeadlockException(id, e.getMessage());
+				if (e.getMessage().contains("deadlock")) {
+					throw new DeadlockException(id, e.getMessage());
+				} else {
+					throw new InvalidTransactionException(e.getMessage());
+				}
 			}
 			writeData(id, cust.getKey(), cust);
 		}
@@ -973,14 +1045,22 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 				try {
 					proxyCar.rmUnreserve(id, Car.getKey(location), 1);
 				} catch (Exception e) {
-					throw new DeadlockException(id, e.getMessage());
+					if (e.getMessage().contains("deadlock")) {
+						throw new DeadlockException(id, e.getMessage());
+					} else {
+						throw new InvalidTransactionException(e.getMessage());
+					}
 				}
 			}
 			if (room) {
 				try {
 					proxyRoom.rmUnreserve(id, Room.getKey(location), 1);
 				} catch (Exception e) {
-					throw new DeadlockException(id, e.getMessage());
+					if (e.getMessage().contains("deadlock")) {
+						throw new DeadlockException(id, e.getMessage());
+					} else {
+						throw new InvalidTransactionException(e.getMessage());
+					}
 				}
 			}
 			for (int i=0; i<reserveFlightResult.length; i++) {
@@ -989,7 +1069,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 					try {
 						proxyFlight.rmUnreserve(id, Flight.getKey(flightNum), 1);
 					} catch (Exception e) {
-						throw new DeadlockException(id, e.getMessage());
+						if (e.getMessage().contains("deadlock")) {
+							throw new DeadlockException(id, e.getMessage());
+						} else {
+							throw new InvalidTransactionException(e.getMessage());
+						}
 					}
 				}
 			}
@@ -1019,6 +1103,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
     /* Shut down gracefully */
 	@Override
 	public boolean shutdown() {
+		//TODO persistent data handling
 		tm.stopHeartbeatSweeper();
 		Set<Integer> transactionsIds = new HashSet<>(txnHistory.keySet()); //prevent concurrent modification of map
 		boolean r = transactionsIds.stream()
@@ -1135,6 +1220,26 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public void removeTxn(int txnID) {
 		txnHistory.remove(txnID);
+	}
+
+	@Override
+	public boolean crashMW() {
+		tm.stopHeartbeatSweeper();
+		// Schedule a shutdown
+		new TimedExit();
+		return true;
+	}
+
+	@Override
+	public boolean crashRM(int id) {
+		if (id == 1) {
+			proxyFlight.crashRM(id);
+		} else if (id == 2) {
+			proxyCar.crashRM(id);
+		} else {
+			proxyRoom.crashRM(id);
+		}
+		return true;
 	}
 }
 

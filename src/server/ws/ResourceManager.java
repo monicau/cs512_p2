@@ -172,6 +172,14 @@ public interface ResourceManager {
     /* Shut down gracefully */
     @WebMethod
     public boolean shutdown();
+    
+    /* Crash ungracefully */
+    @WebMethod
+    public boolean crashMW();
+    
+    /* Crash ungracefully */
+    @WebMethod
+    public boolean crashRM(int id);
 
     public void removeTxn(int txnID);
 	public boolean unlock(int txnID);                                                    

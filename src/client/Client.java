@@ -625,6 +625,45 @@ public class Client extends WSClient {
                     //e.printStackTrace();
                 }
                 break;
+            case 27:  //Crash MW
+                if (arguments.size() != 1) {
+                    wrongNumber();
+                    break;
+                }
+                System.out.println("Crashing middleware.");
+                try {
+                    proxy.crashMW();
+                }
+                catch(Exception e) {
+                    System.out.println("EXCEPTION: ");
+                    System.out.println(e.getMessage());
+                    //e.printStackTrace();
+                }
+                break;
+            case 28:  //Crash RM
+                if (arguments.size() != 2) {
+                    wrongNumber();
+                    break;
+                }
+                System.out.println("Crashing resource manager.");
+                try {
+                	String rm = getString(arguments.elementAt(1)).toLowerCase();
+                	if (rm.contains("flight")) {
+                		proxy.crashRM(1);
+                	} else if (rm.contains("car")) {
+                		proxy.crashRM(2);
+                	} else if (rm.contains("room")) {
+                		proxy.crashRM(3);
+                	} else {
+                		System.out.println("ERROR: resource manager " + rm + " does not exist.");
+                	}
+                }
+                catch(Exception e) {
+                    System.out.println("EXCEPTION: ");
+                    System.out.println(e.getMessage());
+                    //e.printStackTrace();
+                }
+                break;
             default:
                 System.out.println("The interface does not support this command.");
                 break;
@@ -697,6 +736,10 @@ public class Client extends WSClient {
             return 25;
         else if (argument.compareToIgnoreCase("shutdown") == 0)
             return 26;
+        else if (argument.compareToIgnoreCase("crashmw") == 0) 
+        	return 27;
+        else if (argument.compareToIgnoreCase("crashrm") == 0) 
+        	return 28;
         else
             return 666;
     }
@@ -927,6 +970,18 @@ public class Client extends WSClient {
                 System.out.println("\nUsage: ");
                 System.out.println("\tshutdown");
             break;
+            
+            case 27: //crash mw
+            	System.out.println("Crashes middleware");
+            	System.out.println("\nUsage: ");
+                System.out.println("\tcrashMW");
+        	break;
+        	
+            case 28: //crash rm
+            	System.out.println("Crashes a resource manager");
+            	System.out.println("\nUsage: ");
+                System.out.println("\tcrashrm,RM_NUMBER");
+        	break;
             
             default:
             System.out.println(command);
