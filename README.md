@@ -51,19 +51,19 @@ for multiple client system analysis, launch this client.
 ###How to crash things at client
 Crash middleware with
 
-```crashmw```
+``` crashmw ```
 
 Crash flight resource manager with
 
-```crashrm,flight```
+``` crashrm,flight ```
 
 Crash room resource manager with
 
-```crashrm,room```
+``` crashrm,room ```
 
 Crash car resource manager with
 
-```crashrm,car```
+``` crashrm,car ```
 
 --
 
