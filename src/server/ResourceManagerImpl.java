@@ -777,13 +777,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	@Override
-	public boolean crashMW() {
-		return false;
+	public void crash(String target) {
 	}
 	
 	@Override
-	public boolean crashRM(int id) {
+	public void selfDestruct() {
+		// Schedule a shutdown
+		System.out.println("Self destructing....");
 		new TimedExit();
-		return true;
 	}
 }

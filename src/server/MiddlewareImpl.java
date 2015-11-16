@@ -1223,23 +1223,24 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	}
 
 	@Override
-	public boolean crashMW() {
+	public void crash(String target) {
+		System.out.println("MW:: crashing " + target);
+		if (target.equals("mw")) {
+			selfDestruct();
+		} else if (target.equals("flight")) {
+			proxyFlight.selfDestruct();
+		} else if (target.equals("car")) {
+			proxyCar.selfDestruct();
+		} else if (target.equals("room")) {
+			proxyRoom.selfDestruct();
+		}
+	}
+	
+	@Override
+	public void selfDestruct() {
 		tm.stopHeartbeatSweeper();
 		// Schedule a shutdown
 		new TimedExit();
-		return true;
-	}
-
-	@Override
-	public boolean crashRM(int id) {
-		if (id == 1) {
-			proxyFlight.crashRM(id);
-		} else if (id == 2) {
-			proxyCar.crashRM(id);
-		} else {
-			proxyRoom.crashRM(id);
-		}
-		return true;
 	}
 }
 

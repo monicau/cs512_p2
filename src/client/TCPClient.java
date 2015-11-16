@@ -12,6 +12,7 @@ import java.util.concurrent.TimeoutException;
 import server.Messenger;
 import server.RMItem;
 import server.TCPServiceRequest;
+import server.TimedExit;
 import server.ws.ResourceManager;
 
 public class TCPClient extends TCPServiceRequest implements ResourceManager{
@@ -366,15 +367,11 @@ public class TCPClient extends TCPServiceRequest implements ResourceManager{
 	}
 
 	@Override
-	public boolean crashMW() {
-		// TODO Auto-generated method stub
-		return false;
+	public void crash(String target) {
 	}
-
+	
 	@Override
-	public boolean crashRM(int id) {
-		// TODO Auto-generated method stub
-		return false;
+	public void selfDestruct() {
 	}
 
 }

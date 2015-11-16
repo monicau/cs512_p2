@@ -175,11 +175,10 @@ public interface ResourceManager {
     
     /* Crash ungracefully */
     @WebMethod
-    public boolean crashMW();
+    public void crash(String target);
     
-    /* Crash ungracefully */
     @WebMethod
-    public boolean crashRM(int id);
+    public void selfDestruct();
 
     public void removeTxn(int txnID);
 	public boolean unlock(int txnID);                                                    

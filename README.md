@@ -49,21 +49,10 @@ for single client system analysis, launch this client.
 for multiple client system analysis, launch this client.
 
 ###How to crash things at client
-Crash middleware with
 
-``` crashmw ```
+``` crash,target ```
 
-Crash flight resource manager with
-
-``` crashrm,flight ```
-
-Crash room resource manager with
-
-``` crashrm,room ```
-
-Crash car resource manager with
-
-``` crashrm,car ```
+where target is mw, flight, car or room
 
 --
 
