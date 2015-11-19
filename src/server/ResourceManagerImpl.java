@@ -39,7 +39,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	private String MW_LOCATION = "localhost";
 	private RMMap<Integer, Vector<ItemHistory>> txnHistory;
 	private LockManager lm;
-
+	private Shadower shadower;
+	private String type;
+	
 	private AtomicInteger lastTrxnID = new AtomicInteger(0);
 	
 	boolean useWebService;
@@ -305,6 +307,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			int numSeats, int flightPrice) throws DeadlockException {
 		Trace.info("RM::addFlight(" + id + ", " + flightNumber + ", $"
 				+ flightPrice + ", " + numSeats + ") called.");
+		type = "flight";
 		lm.Lock(id, Flight.getKey(flightNumber), LockManager.WRITE);
 		
 		Flight curObj = (Flight) readData(id, Flight.getKey(flightNumber));
@@ -395,6 +398,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			int carPrice) throws DeadlockException {
 		Trace.info("RM::addCars(" + id + ", " + location + ", " + numCars
 				+ ", $" + carPrice + ") called.");
+		type = "car";
 		lm.Lock(id, Car.getKey(location), LockManager.WRITE);
 		Car curObj = (Car) readData(id, Car.getKey(location));
 		
@@ -460,6 +464,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			int roomPrice) throws DeadlockException {
 		Trace.info("RM::addRooms(" + id + ", " + location + ", " + numRooms
 				+ ", $" + roomPrice + ") called.");
+		type = "room";
 		lm.Lock(id, Room.getKey(location), LockManager.WRITE);
 		Room curObj = (Room) readData(id, Room.getKey(location));
 		ItemHistory history;
@@ -682,7 +687,14 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		// sanity check
 		if(txnHistory.get(transactionId) == null) return false;
 		txnHistory.remove(transactionId);
-		
+		if (shadower == null && type != null) {
+			shadower = new Shadower(type);
+			RMMap recovery = shadower.recover();
+			if (recovery != null) m_itemHT = recovery;
+		}
+		if (shadower != null) {
+			shadower.commitToStorage(m_itemHT);
+		}
 		return this.unlock(transactionId);
 	}
 
@@ -734,6 +746,12 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 					throw new IllegalStateException("A new action is detected, there is no implementation ready for this state");
 				}
 			}
+		}
+		if (shadower == null && type != null) {
+			shadower = new Shadower(type);
+		}
+		if (shadower != null) {
+			shadower.commitToStorage(m_itemHT);
 		}
 		return this.unlock(transactionId);
 	}

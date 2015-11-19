@@ -64,6 +64,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	boolean useWebService;
 	private LockManager lm;
 	private TransactionManager tm;
+	private Shadower shadower;
 	private RMMap<Integer, Vector<ItemHistory>> txnHistory;
 
 	int next_port = 8098;
@@ -74,12 +75,19 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	List<Integer> rmPorts = new CopyOnWriteArrayList<>();
 	List<InetAddress> rmAddresses = new CopyOnWriteArrayList<>();
 	private TCPServiceRequest tcp;
+	protected RMMap m_itemHT = new RMMap<>();
 
 	
 	public MiddlewareImpl(){
 		System.out.println("Starting middleware");
 		lm = new LockManager();
 		txnHistory = new RMMap<Integer, Vector<ItemHistory>>();
+		shadower = new Shadower("mw"); 
+		RMMap recovery = shadower.recover();
+		if (recovery != null ) {
+			System.out.println("MW:: Recovered data");
+			m_itemHT = recovery;
+		}
 		//Determine if we are using web services or tcp
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(new File("serviceType.txt")));
@@ -311,7 +319,6 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			}
 		}
 	}
-	protected RMMap m_itemHT = new RMMap<>();
 
 	// Basic operations on RMItem //
 
@@ -1093,6 +1100,13 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public boolean commit(int transactionId) throws InvalidTransactionException {
 		if (!tm.isValidTransaction(transactionId)) throw new InvalidTransactionException();
 		return tm.commit(transactionId);
+	}
+	/* Local commit */
+	public boolean localCommit(int transactionId) {
+		removeTxn(transactionId);
+		boolean r = unlock(transactionId);
+		shadower.commitToStorage(m_itemHT);
+		return r;
 	}
     /* Abort the given transaction */
 	@Override

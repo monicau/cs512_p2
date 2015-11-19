@@ -111,8 +111,7 @@ public class TransactionManager {
 					switch (rm) {
 					case CUSTOMER:
 						System.out.println("TM:: clearing txn history and unlocking customer");
-						mw.removeTxn(txnID);
-						success &= mw.unlock(txnID);
+						success &= mw.localCommit(txnID);
 						break;
 					case FLIGHT:
 						System.out.println("TM:: clearing txn history and unlocking flight");
