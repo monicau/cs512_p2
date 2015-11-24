@@ -18,6 +18,8 @@ import java.lang.reflect.Method;
 import java.net.Socket;
 import java.net.URL;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.Vector;
@@ -44,8 +46,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	private LockManager lm;
 	private Shadower shadower;
 	private String type;
-	ResourceManager proxyMW;
-	ResourceManagerImplService service;
+//	ResourceManager proxyMW;
+//	ResourceManagerImplService service;
 	
 	private AtomicInteger lastTrxnID = new AtomicInteger(0);
 	
@@ -67,17 +69,17 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 				MW_LOCATION = reader.readLine();
 				MW_PORT = Integer.parseInt(reader.readLine());
 				
-				URL wsdlLocation = new URL("http", MW_LOCATION, MW_PORT, "/" + "mw" + "/mw?wsdl");
-				service = new ResourceManagerImplService(wsdlLocation);
-				proxyMW = service.getResourceManagerImplPort();
-//				if (line.equals("ws")) {
-//					useWebService = true;
-//				} else {
-//					useWebService = false;
-//					reader = new BufferedReader(new FileReader(new File(
-//							"config.txt")));
-//					MW_LOCATION = reader.readLine();
-//				}
+//				URL wsdlLocation = new URL("http", MW_LOCATION, MW_PORT, "/" + "mw" + "/mw?wsdl");
+//				service = new ResourceManagerImplService(wsdlLocation);
+//				proxyMW = service.getResourceManagerImplPort();
+				if (line.equals("ws")) {
+					useWebService = true;
+				} else {
+					useWebService = false;
+					reader = new BufferedReader(new FileReader(new File(
+							"config.txt")));
+					MW_LOCATION = reader.readLine();
+				}
 			} catch (IOException e) {
 				Trace.info("ERROR: IOException, cannot read serviceType.txt");
 			}
@@ -181,6 +183,26 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 						}
 					}).start();
 		}
+		// Determine what type of RM you are
+		File flight = new File("flight.txt");
+		if (flight.exists()) {
+			flight.delete();
+			type = "flight";
+		} else {
+			File car = new File("car.txt");
+			if (car.exists()) {
+				car.delete();
+				type = "car";
+			} else {
+				File room = new File("room.txt");
+				room.delete();
+				type = "room";
+			}
+		}
+		// Create shadower and try to recover
+		shadower = new Shadower(type);
+		RMMap recovery = shadower.recover();
+		if (recovery != null) m_itemHT = recovery;
 	}
 
 	void getPort(Consumer<Integer> onGetPort) throws InterruptedException {
@@ -321,7 +343,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		type = "flight";
 		lm.Lock(id, Flight.getKey(flightNumber), LockManager.WRITE);
 		
-		proxyMW.reserveItem("yey", 1, 1, "yey");
+//		proxyMW.reserveItem("yey", 1, 1, "yey");
 		
 		Flight curObj = (Flight) readData(id, Flight.getKey(flightNumber));
 		
@@ -700,14 +722,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		// sanity check
 		if(txnHistory.get(transactionId) == null) return false;
 		txnHistory.remove(transactionId);
-		if (shadower == null && type != null) {
-			shadower = new Shadower(type);
-			RMMap recovery = shadower.recover();
-			if (recovery != null) m_itemHT = recovery;
-		}
-		if (shadower != null) {
-			shadower.commitToStorage(m_itemHT);
-		}
+		shadower.commitToStorage(m_itemHT);
 		return this.unlock(transactionId);
 	}
 
@@ -760,12 +775,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 				}
 			}
 		}
-		if (shadower == null && type != null) {
-			shadower = new Shadower(type);
-		}
-		if (shadower != null) {
-			shadower.commitToStorage(m_itemHT);
-		}
+		shadower.commitToStorage(m_itemHT);
 		return this.unlock(transactionId);
 	}
 

@@ -188,6 +188,7 @@
             <arg value="${service.rm1.port}"/>
             <arg value="${basedir}/webapps"/>
             <arg value="${service.type}"/>
+            <arg value="flight" />
         </java>
     </target>
     
@@ -205,6 +206,7 @@
             <arg value="${service.rm2.port}"/>
             <arg value="${basedir}/webapps"/>
             <arg value="${service.type}"/>
+            <arg value="car" />
         </java>
     </target>
     
@@ -222,6 +224,7 @@
             <arg value="${service.rm3.port}"/>
             <arg value="${basedir}/webapps"/>
             <arg value="${service.type}"/>
+            <arg value="room" />
         </java>
     </target>
 	

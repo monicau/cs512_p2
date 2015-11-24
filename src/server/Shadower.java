@@ -45,6 +45,7 @@ public class Shadower {
 		// Check if master record exists
 		try {
 			// Try to read from master record
+			System.out.println("S:: trying to read from " + name + "/master");
 			String targetVersionFile = new String(Files.readAllBytes(Paths.get(name+"/master")));
 			System.out.println("S:: read this from master record: " + targetVersionFile);
 			RMMap data;
