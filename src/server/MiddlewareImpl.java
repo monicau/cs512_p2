@@ -149,6 +149,10 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 				Trace.info("ERROR: File not found!");
 			}
 			tm = new TransactionManager(this, proxyFlight, proxyCar, proxyRoom, 60000);
+			int txnCounter = shadower.recoverTxnID();
+			if (txnCounter > 0) {
+				tm.setTxnCounter(txnCounter);
+			}
 		} 
 		else {
 			// sockets
@@ -1094,7 +1098,9 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
     /* Start a new transaction and return its id. */
 	@Override
 	public int start() {
-		return tm.start();
+		int txn = tm.start();
+		shadower.latestTxn(txn);
+		return txn;
 	}
     /* Attempt to commit the given transaction; return true upon success. */
 	@Override

@@ -8,6 +8,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
@@ -79,6 +81,20 @@ public class Shadower {
 		return null;
 	}
 	
+	public int recoverTxnID() {
+		try {
+			String txn = new String(Files.readAllBytes(Paths.get("mw/txnCounter.txt")));
+			if (txn != null) {
+				txn = txn.replaceAll("\\s", "");
+				int txnNum = Integer.parseInt(txn);
+				return txnNum;
+			}
+		} catch (IOException e) {
+			System.out.println("S:: Fail to read txn counter.");
+		}
+		return -1;
+	}
+	
 	// Write to storage using shadowing
 	public void commitToStorage(RMMap data) {
 		// Write data to a version file
@@ -99,6 +115,18 @@ public class Shadower {
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public void latestTxn(int txn) {
+		PrintWriter writer;
+		try {
+			writer = new PrintWriter("mw/txnCounter.txt", "UTF-8");
+			writer.println(txn);
+	        writer.close();
+		} catch (FileNotFoundException | UnsupportedEncodingException e) {
+			System.out.println("S:: Fail to write to mw/txnCounter.txt");
 			e.printStackTrace();
 		}
 	}

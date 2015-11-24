@@ -90,6 +90,10 @@ public class TransactionManager {
 	public boolean isValidTransaction(int txnID) {
 		return activeTransactions.contains(txnID);
 	}
+	
+	public void setTxnCounter(int txn) {
+		txnCounter.set(txn);
+	}
 
 	// Return a new txn ID
 	synchronized public int start() {
