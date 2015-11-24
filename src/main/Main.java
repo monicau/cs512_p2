@@ -17,13 +17,7 @@ public class Main {
             System.exit(-1);
         }
         
-        String use_services = args[0];
-        String middleware_ip = args[1];
-        try(PrintWriter writer = new PrintWriter("config.txt", "UTF-8")){
-        	writer.println(use_services+" "+middleware_ip);
-        	writer.println(middleware_ip);
-        	writer.close();
-        }
+        
         String tcpPort = "";
         String serviceName = args[2];
         int port = Integer.parseInt(args[3]);
@@ -34,6 +28,14 @@ public class Main {
         } else {
         	serviceType = args[11];
         	tcpPort = args[12];
+        }
+     
+        String use_services = args[0];
+        String middleware_ip = args[1];
+        try(PrintWriter writer = new PrintWriter("config.txt", "UTF-8")){
+        	writer.println(middleware_ip);
+        	writer.println(port);
+        	writer.close();
         }
         
         PrintWriter writer = new PrintWriter("serviceType.txt", "UTF-8");

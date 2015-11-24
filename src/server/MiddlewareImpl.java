@@ -802,6 +802,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	//Method for resource manager only.
 	public boolean reserveItem(String reserveType, int id, int flightNumber, String location) throws DeadlockException {
+		System.out.println("MW PROXY GOT THRU YEY");
 		return false;
 	}
 	//Method for resource manager only.

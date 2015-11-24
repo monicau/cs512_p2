@@ -15,7 +15,7 @@ import java.nio.file.Paths;
  * 
  *  Is responsible for shadowing.
  *  Each resource manager's set of files is located in
- *  the directory of its name. 
+ *  the directory of its name: mw, flight, car, room
  */
 public class Shadower {
 	public enum version { A, B };

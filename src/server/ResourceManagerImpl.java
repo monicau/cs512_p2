@@ -16,6 +16,7 @@ import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Method;
 import java.net.Socket;
+import java.net.URL;
 import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
@@ -28,6 +29,7 @@ import javax.jws.WebService;
 
 import server.ItemHistory.Action;
 import server.ItemHistory.ItemType;
+import server.ws.ResourceManager;
 import lockmanager.DeadlockException;
 import lockmanager.LockManager;
 import TransactionManager.InvalidTransactionException;
@@ -37,10 +39,13 @@ import com.google.gson.Gson;
 @WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {
 	private String MW_LOCATION = "localhost";
+	private int MW_PORT;
 	private RMMap<Integer, Vector<ItemHistory>> txnHistory;
 	private LockManager lm;
 	private Shadower shadower;
 	private String type;
+	ResourceManager proxyMW;
+	ResourceManagerImplService service;
 	
 	private AtomicInteger lastTrxnID = new AtomicInteger(0);
 	
@@ -58,15 +63,21 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			try {
 				String line = reader.readLine();
 				reader.close();
-				if (line.equals("ws")) {
-					useWebService = true;
-				} else {
-					useWebService = false;
-					reader = new BufferedReader(new FileReader(new File(
-							"config.txt")));
-					MW_LOCATION = reader.readLine();
-					MW_LOCATION = reader.readLine();
-				}
+				reader = new BufferedReader(new FileReader(new File("config.txt")));
+				MW_LOCATION = reader.readLine();
+				MW_PORT = Integer.parseInt(reader.readLine());
+				
+				URL wsdlLocation = new URL("http", MW_LOCATION, MW_PORT, "/" + "mw" + "/mw?wsdl");
+				service = new ResourceManagerImplService(wsdlLocation);
+				proxyMW = service.getResourceManagerImplPort();
+//				if (line.equals("ws")) {
+//					useWebService = true;
+//				} else {
+//					useWebService = false;
+//					reader = new BufferedReader(new FileReader(new File(
+//							"config.txt")));
+//					MW_LOCATION = reader.readLine();
+//				}
 			} catch (IOException e) {
 				Trace.info("ERROR: IOException, cannot read serviceType.txt");
 			}
@@ -309,6 +320,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 				+ flightPrice + ", " + numSeats + ") called.");
 		type = "flight";
 		lm.Lock(id, Flight.getKey(flightNumber), LockManager.WRITE);
+		
+		proxyMW.reserveItem("yey", 1, 1, "yey");
 		
 		Flight curObj = (Flight) readData(id, Flight.getKey(flightNumber));
 		
