@@ -5,12 +5,14 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 
 /**
@@ -96,7 +98,7 @@ public class Shadower {
 	}
 	
 	// Write to storage using shadowing
-	public void commitToStorage(RMMap data) {
+	public void prepareCommit(RMMap data) {
 		// Write data to a version file
 		if (workingVersion == null) {
 			workingVersion = version.A;
@@ -110,8 +112,7 @@ public class Shadower {
 			out.writeObject(data);
 			fileOut.close();
 			out.close();
-			// Update master record
-			updateMaster();
+			
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
 		} catch (IOException e) {
@@ -131,7 +132,8 @@ public class Shadower {
 		}
 	}
 	
-	private void updateMaster() {
+	// update the master to point to the current working data file
+	public void actualCommit() {
 		if (workingVersion == version.A) {
 			workingVersion = version.B;
 			committedVersion = version.A;
@@ -147,4 +149,12 @@ public class Shadower {
 			e.printStackTrace();
 		}
 	}
+	
+	// facilitator functions
+	public Path dataFolder(){
+		return Paths.get(this.name);
+	}
+	
+
+	
 }

@@ -374,4 +374,16 @@ public class TCPClient extends TCPServiceRequest implements ResourceManager{
 	public void selfDestruct() {
 	}
 
+	@Override
+	public boolean votePhase(int transactionId) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean decisionPhase(int transactionId, boolean commit) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
 }

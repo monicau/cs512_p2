@@ -46,6 +46,7 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import javax.jws.WebMethod;
 import javax.jws.WebService;
 
+import server.Logger.Type;
 import lockmanager.DeadlockException;
 import lockmanager.LockManager;
 import TransactionManager.InvalidTransactionException;
@@ -77,6 +78,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	private TCPServiceRequest tcp;
 	protected RMMap m_itemHT = new RMMap<>();
 
+	private Logger logger;
 	
 	public MiddlewareImpl(){
 		System.out.println("Starting middleware");
@@ -322,6 +324,9 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 				e.printStackTrace();
 			}
 		}
+		
+		
+		this.logger = new Logger(Type.customer);
 	}
 
 	// Basic operations on RMItem //
@@ -1112,9 +1117,42 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public boolean localCommit(int transactionId) {
 		removeTxn(transactionId);
 		boolean r = unlock(transactionId);
-		shadower.commitToStorage(m_itemHT);
+		shadower.prepareCommit(m_itemHT);
 		return r;
 	}
+	@Override
+	public boolean votePhase(int transactionId) {
+		Trace.info("RM:: commiting transaction "+transactionId);
+		// sanity check
+		if(txnHistory.get(transactionId) == null) return false;
+		txnHistory.remove(transactionId);
+		shadower.prepareCommit(m_itemHT);
+		
+		// log the event
+		boolean answer = true;
+		this.logger.log(transactionId+","+answer);
+		return answer;
+	}
+
+	@Override
+	public boolean decisionPhase(int transactionId, boolean commit) {
+		// log the event
+		if(commit){
+			shadower.actualCommit();
+		}
+		else{
+			try {
+				this.abort(transactionId);
+			} catch (InvalidTransactionException e) {
+				e.printStackTrace();
+			}
+		}
+		this.logger.log(transactionId+", ,"+commit);
+		this.unlock(transactionId);
+		return true;
+	}
+	
+
     /* Abort the given transaction */
 	@Override
 	public boolean abort(int transactionId) throws InvalidTransactionException {

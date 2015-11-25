@@ -184,5 +184,9 @@ public interface ResourceManager {
 	public boolean unlock(int txnID);                                                    
 	public RMItem readFromStorage(int id, String key);                        
 	public void writeToStorage(int id, String key, RMItem value);                 
-	public RMItem deleteFromStorage(int id, String key);                   
+	public RMItem deleteFromStorage(int id, String key);        
+	
+	//2PC functions
+	public boolean votePhase(int transactionId);
+	public boolean decisionPhase(int transactionId, boolean commit);
 }

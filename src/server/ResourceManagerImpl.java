@@ -6,8 +6,10 @@
 package server;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,6 +33,7 @@ import javax.jws.WebService;
 
 import server.ItemHistory.Action;
 import server.ItemHistory.ItemType;
+import server.Logger.Type;
 import server.ws.ResourceManager;
 import lockmanager.DeadlockException;
 import lockmanager.LockManager;
@@ -48,6 +51,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	private String type;
 //	ResourceManager proxyMW;
 //	ResourceManagerImplService service;
+	
+	private Logger logger;
 	
 	private AtomicInteger lastTrxnID = new AtomicInteger(0);
 	
@@ -184,6 +189,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 					}).start();
 		}
 		// Determine what type of RM you are
+		
+		
+		// what if flight doesnt exist then car and room will never be checked
 		File flight = new File("flight.txt");
 		if (flight.exists()) {
 			flight.delete();
@@ -201,6 +209,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		}
 		// Create shadower and try to recover
 		shadower = new Shadower(type);
+		logger = new Logger(Type.valueOf(type));
 		RMMap recovery = shadower.recover();
 		if (recovery != null) m_itemHT = recovery;
 	}
@@ -722,7 +731,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		// sanity check
 		if(txnHistory.get(transactionId) == null) return false;
 		txnHistory.remove(transactionId);
-		shadower.commitToStorage(m_itemHT);
+		shadower.prepareCommit(m_itemHT);
 		return this.unlock(transactionId);
 	}
 
@@ -775,7 +784,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 				}
 			}
 		}
-		shadower.commitToStorage(m_itemHT);
+		shadower.prepareCommit(m_itemHT);
 		return this.unlock(transactionId);
 	}
 
@@ -826,5 +835,33 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		// Schedule a shutdown
 		System.out.println("Self destructing....");
 		new TimedExit();
+	}
+
+	@Override
+	public boolean votePhase(int transactionId) {
+		Trace.info("RM:: commiting transaction "+transactionId);
+		// sanity check
+		if(txnHistory.get(transactionId) == null) return false;
+		txnHistory.remove(transactionId);
+		shadower.prepareCommit(m_itemHT);
+		
+		// log the event
+		boolean answer = true;
+		this.logger.log(transactionId+","+answer);
+		return answer;
+	}
+
+	@Override
+	public boolean decisionPhase(int transactionId, boolean commit) {
+		// log the event
+		if(commit){
+			shadower.actualCommit();
+		}
+		else{
+			this.abort(transactionId);
+		}
+		this.logger.log(transactionId+", ,"+commit);
+		this.unlock(transactionId);
+		return true;
 	}
 }

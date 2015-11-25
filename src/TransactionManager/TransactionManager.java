@@ -1,14 +1,23 @@
 package TransactionManager;
 
+import java.io.File;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.Map.Entry;
 import java.util.Vector;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import server.Logger;
 import server.MiddlewareImpl;
 import server.RMMap;
 import server.ResourceManager;
+import server.Logger.Type;
 
 
 public class TransactionManager {
@@ -26,6 +35,8 @@ public class TransactionManager {
 
 	private Thread sweeper;
 
+	private Logger logger;
+	
 	public TransactionManager(MiddlewareImpl middleware, ResourceManager flight, ResourceManager car, ResourceManager room, int timeToLive) {
 		activeRMs = new RMMap<Integer, Vector<RM>>();
 		timeAlive = new RMMap<Integer, Integer>();
@@ -85,6 +96,8 @@ public class TransactionManager {
 			}
 		});
 		sweeper.start();
+		
+		this.logger = new Logger(Type.coordinator);
 	}
 	
 	public boolean isValidTransaction(int txnID) {
@@ -104,46 +117,108 @@ public class TransactionManager {
 		
 		return counter;
 	}
-	public boolean commit(int txnID) throws InvalidTransactionException {
+	synchronized public boolean commit(int txnID) throws InvalidTransactionException {
 		System.out.println("TM:: Committing transaction "+txnID);    
-		boolean success = true;
+		
 		// Remove txn history on other resource managers and unlock locks
+		
+		// start timer
 		Vector<RM> rms = activeRMs.get(txnID);
+		Callable<Boolean> child = new Callable<Boolean>() {
+			@Override
+			public Boolean call() throws Exception {
+				boolean success = true;
+				try {
+					if (rms != null) {
+						for (RM rm : rms) {
+							switch (rm) {
+							case CUSTOMER:
+								System.out.println("TM:: clearing txn history and unlocking customer");
+								success &= mw.votePhase(txnID);
+								break;
+							case FLIGHT:
+								System.out.println("TM:: clearing txn history and unlocking flight");
+								// remove transaction and unlock in one message
+								success &= proxyFlight.votePhase(txnID);
+								break;
+							case CAR:
+								success &= proxyCar.votePhase(txnID);
+								break;
+							case ROOM:
+								success &= proxyRoom.votePhase(txnID);
+								break;
+							default:
+								break;
+							}
+						}
+					} else {
+						System.out.println("TM:: no RMs involved in this txn.  Committing nothing..");
+					}
+				} catch (Exception e) {
+					throw new InvalidTransactionException();
+				}
+				System.out.println("TM:: Unlock all locks held by this transaction: " + success); 
+				//Remove rm's from activeRM 
+				delist(txnID);
+				int index = activeTransactions.indexOf(txnID);
+				activeTransactions.removeElementAt(index);
+				return success;
+			}
+		};
+		ExecutorService pool = Executors.newFixedThreadPool(1);
+		Future<Boolean> submit = pool.submit(child);
+		Boolean successful = false;
+		try{
+			successful = submit.get(1000, TimeUnit.MILLISECONDS);
+		}
+		catch(Exception e){
+			e.printStackTrace();
+		}
+		pool.shutdownNow();
 		try {
-			if (rms != null) {
+			if(successful == null ){
+				// this is timeout
+				this.logger.log(txnID+","+false);
 				for (RM rm : rms) {
-					switch (rm) {
-					case CUSTOMER:
-						System.out.println("TM:: clearing txn history and unlocking customer");
-						success &= mw.localCommit(txnID);
+					switch (rm){
+					case CAR:
+						proxyCar.abort(txnID);
 						break;
 					case FLIGHT:
-						System.out.println("TM:: clearing txn history and unlocking flight");
-						// remove transaction and unlock in one message
-						success &= proxyFlight.commit(txnID);
-						break;
-					case CAR:
-						success &= proxyCar.commit(txnID);
+						proxyFlight.abort(txnID);
 						break;
 					case ROOM:
-						success &= proxyRoom.commit(txnID);
+						proxyRoom.abort(txnID);
 						break;
-					default:
+					case CUSTOMER:
+						mw.abortCustomer(txnID);
 						break;
 					}
 				}
-			} else {
-				System.out.println("TM:: no RMs involved in this txn.  Committing nothing..");
+				return false;
+			}
+			
+			this.logger.log(txnID+","+successful);
+			for (RM rm : rms) {
+				switch (rm){
+				case CAR:
+					proxyCar.decisionPhase(txnID, successful);
+					break;
+				case FLIGHT:
+					proxyFlight.decisionPhase(txnID, successful);
+					break;
+				case ROOM:
+					proxyRoom.decisionPhase(txnID, successful);
+					break;
+				case CUSTOMER:
+					mw.decisionPhase(txnID, successful);
+					break;
+				}
 			}
 		} catch (Exception e) {
-			throw new InvalidTransactionException();
+			e.printStackTrace();
 		}
-		System.out.println("TM:: Unlock all locks held by this transaction: " + success);     
-		//Remove rm's from activeRM 
-		delist(txnID);
-		int index = activeTransactions.indexOf(txnID);
-		activeTransactions.removeElementAt(index);
-		return success;
+		return successful;
 	}   
 
 	public boolean abort(int txnID) throws InvalidTransactionException {
