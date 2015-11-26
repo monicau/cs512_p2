@@ -4,6 +4,8 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,10 +28,12 @@ public class Logger {
 	public void log(String msg){
 		File log = this.type.location.resolve("log.txt").toFile();
 		try {
-			PrintWriter writer = new PrintWriter(new FileOutputStream(log, true));
-			writer.append(msg+"\n");
-			writer.close();
+			BufferedWriter br = new BufferedWriter(new FileWriter(log, true));
+			br.write(msg +"\n");
+			br.close();
 		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}

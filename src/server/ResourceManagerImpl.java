@@ -52,6 +52,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 //	ResourceManager proxyMW;
 //	ResourceManagerImplService service;
 	
+	private TransactionTimer timer;
+	
 	private Logger logger;
 	
 	private AtomicInteger lastTrxnID = new AtomicInteger(0);
@@ -62,6 +64,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
 	public ResourceManagerImpl() {
 		lm = new LockManager();
+		this.timer = new TransactionTimer(25000, this::abort);
+		this.timer.start();
 		txnHistory = new RMMap<Integer, Vector<ItemHistory>>();
 		// Determine if we are using web services or tcp
 		try {
@@ -347,6 +351,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	@Override
 	synchronized public boolean addFlight(int id, int flightNumber,
 			int numSeats, int flightPrice) throws DeadlockException {
+		timer.ping(id);
 		Trace.info("RM::addFlight(" + id + ", " + flightNumber + ", $"
 				+ flightPrice + ", " + numSeats + ") called.");
 		type = "flight";
@@ -390,6 +395,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
 	@Override
 	public boolean deleteFlight(int id, int flightNumber) throws DeadlockException {
+		timer.ping(id);
 		lm.Lock(id, Flight.getKey(flightNumber), LockManager.WRITE);
 		return deleteItem(id, Flight.getKey(flightNumber));
 	}
@@ -397,12 +403,14 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	// Returns the number of empty seats on this flight.
 	@Override
 	public int queryFlight(int id, int flightNumber) throws DeadlockException {
+		timer.ping(id);
 		lm.Lock(id, Flight.getKey(flightNumber), LockManager.READ);
 		return queryNum(id, Flight.getKey(flightNumber));
 	}
 
 	// Returns price of this flight.
 	public int queryFlightPrice(int id, int flightNumber) throws DeadlockException {
+		timer.ping(id);
 		lm.Lock(id, Flight.getKey(flightNumber), LockManager.READ);
 		return queryPrice(id, Flight.getKey(flightNumber));
 	}
@@ -440,6 +448,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	@Override
 	synchronized public boolean addCars(int id, String location, int numCars,
 			int carPrice) throws DeadlockException {
+		timer.ping(id);
 		Trace.info("RM::addCars(" + id + ", " + location + ", " + numCars
 				+ ", $" + carPrice + ") called.");
 		type = "car";
@@ -480,6 +489,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	// Delete cars from a location.
 	@Override
 	public boolean deleteCars(int id, String location) throws DeadlockException {
+		timer.ping(id);
 		lm.Lock(id, Car.getKey(location), LockManager.WRITE);
 		return deleteItem(id, Car.getKey(location));
 	}
@@ -487,6 +497,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	// Returns the number of cars available at a location.
 	@Override
 	public int queryCars(int id, String location) throws DeadlockException {
+		timer.ping(id);
 		lm.Lock(id, Car.getKey(location), LockManager.READ);
 		return queryNum(id, Car.getKey(location));
 	}
@@ -494,6 +505,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	// Returns price of cars at this location.
 	@Override
 	public int queryCarsPrice(int id, String location) throws DeadlockException {
+		timer.ping(id);
 		lm.Lock(id, Car.getKey(location), LockManager.READ);
 		return queryPrice(id, Car.getKey(location));
 	}
@@ -506,6 +518,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	@Override
 	synchronized public boolean addRooms(int id, String location, int numRooms,
 			int roomPrice) throws DeadlockException {
+		timer.ping(id);
 		Trace.info("RM::addRooms(" + id + ", " + location + ", " + numRooms
 				+ ", $" + roomPrice + ") called.");
 		type = "room";
@@ -545,6 +558,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	// Delete rooms from a location.
 	@Override
 	public boolean deleteRooms(int id, String location) throws DeadlockException {
+		timer.ping(id);
 		lm.Lock(id, Room.getKey(location), LockManager.WRITE);
 		return deleteItem(id, Room.getKey(location));
 	}
@@ -552,6 +566,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	// Returns the number of rooms available at a location.
 	@Override
 	public int queryRooms(int id, String location) throws DeadlockException {
+		timer.ping(id);
 		lm.Lock(id, Room.getKey(location), LockManager.READ);
 		return queryNum(id, Room.getKey(location));
 	}
@@ -559,6 +574,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	// Returns room price at this location.
 	@Override
 	public int queryRoomsPrice(int id, String location) throws DeadlockException {
+		timer.ping(id);
 		lm.Lock(id, Room.getKey(location), LockManager.READ);
 		return queryPrice(id, Room.getKey(location));
 	}
@@ -610,6 +626,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean reserveItem(String reserveType, int id, int flightNumber,
 			String location) throws DeadlockException {
+		timer.ping(id);
 		String key = null;
 		ItemType itemType;
 		if (reserveType.toLowerCase().equals("flight")) {
@@ -728,6 +745,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean commit(int transactionId) {
 		Trace.info("RM:: commiting transaction "+transactionId);
+		timer.ping(transactionId);
 		// sanity check
 		if(txnHistory.get(transactionId) == null) return false;
 		txnHistory.remove(transactionId);
@@ -834,14 +852,15 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	public void selfDestruct() {
 		// Schedule a shutdown
 		System.out.println("Self destructing....");
+		timer.kill();
 		new TimedExit();
 	}
 
 	@Override
-	public boolean votePhase(int transactionId) {
+	public boolean prepare(int transactionId) throws InvalidTransactionException, TransactionAbortedException{
 		Trace.info("RM:: commiting transaction "+transactionId);
 		// sanity check
-		if(txnHistory.get(transactionId) == null) return false;
+		if(txnHistory.get(transactionId) == null) throw new InvalidTransactionException("No such transaction "+transactionId);
 		txnHistory.remove(transactionId);
 		shadower.prepareCommit(m_itemHT);
 		

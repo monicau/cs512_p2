@@ -24,6 +24,7 @@ import javax.jws.WebMethod;
 import TransactionManager.InvalidTransactionException;
 import server.Customer;
 import server.RMItem;
+import server.TransactionAbortedException;
 import lockmanager.DeadlockException;
 
 
@@ -187,6 +188,6 @@ public interface ResourceManager {
 	public RMItem deleteFromStorage(int id, String key);        
 	
 	//2PC functions
-	public boolean votePhase(int transactionId);
-	public boolean decisionPhase(int transactionId, boolean commit);
+	public boolean prepare(int transactionId) throws InvalidTransactionException, TransactionAbortedException;
+	public boolean decisionPhase(int transactionId, boolean commit) ;
 }

@@ -80,8 +80,12 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	private Logger logger;
 	
+	TransactionTimer timer;
+	
 	public MiddlewareImpl(){
 		System.out.println("Starting middleware");
+		this.timer = new TransactionTimer(25000, this::abortCustomer);
+		this.timer.start();
 		lm = new LockManager();
 		txnHistory = new RMMap<Integer, Vector<ItemHistory>>();
 		shadower = new Shadower("mw"); 
@@ -1121,7 +1125,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		return r;
 	}
 	@Override
-	public boolean votePhase(int transactionId) {
+	public boolean prepare(int transactionId) {
 		Trace.info("RM:: commiting transaction "+transactionId);
 		// sanity check
 		if(txnHistory.get(transactionId) == null) return false;

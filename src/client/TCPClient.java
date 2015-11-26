@@ -375,7 +375,7 @@ public class TCPClient extends TCPServiceRequest implements ResourceManager{
 	}
 
 	@Override
-	public boolean votePhase(int transactionId) {
+	public boolean prepare(int transactionId) {
 		// TODO Auto-generated method stub
 		return false;
 	}

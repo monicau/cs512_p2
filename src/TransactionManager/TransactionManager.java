@@ -48,54 +48,6 @@ public class TransactionManager {
 		proxyCar = car;
 		proxyRoom = room;
 		ttl = timeToLive;
-
-		sweeper = new Thread(() ->{
-			while(!Thread.interrupted()){
-				Iterator<Entry<Integer, Integer>> it = timeAlive.entrySet().iterator();
-				while(it.hasNext()){
-					Entry<Integer, Integer> livedFor = it.next();
-					int txnID = livedFor.getKey();
-					int timealive = livedFor.getValue();
-					Vector<RM> vector = activeRMs.get(txnID);
-					timeAlive.replace(txnID, (timealive-500));
-					if(timealive <= 0){
-						boolean success = true;
-						if (vector != null) {
-							try {
-								for (RM rm : vector) {
-									switch (rm) {
-									case CUSTOMER:
-										success &= mw.abortCustomer(txnID) && mw.unlock(txnID);
-										break;
-									case FLIGHT:
-										// abort transaction and unlock in one message
-										success &= proxyFlight.abort(txnID);
-										break;
-									case CAR:
-										success &= proxyCar.abort(txnID);
-										break;
-									case ROOM:
-										success &= proxyRoom.abort(txnID);
-										break;
-									default:
-										break;
-									}
-								} 
-							} catch (Exception e) {
-							}
-						}
-						System.out.println("TM:: Unlock all locks held by this transaction: " + success); 
-						delist(txnID);
-					}
-				}
-				try {
-					Thread.sleep(500);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-		sweeper.start();
 		
 		this.logger = new Logger(Type.coordinator);
 	}
@@ -134,18 +86,18 @@ public class TransactionManager {
 							switch (rm) {
 							case CUSTOMER:
 								System.out.println("TM:: clearing txn history and unlocking customer");
-								success &= mw.votePhase(txnID);
+								success &= mw.prepare(txnID);
 								break;
 							case FLIGHT:
 								System.out.println("TM:: clearing txn history and unlocking flight");
 								// remove transaction and unlock in one message
-								success &= proxyFlight.votePhase(txnID);
+								success &= proxyFlight.prepare(txnID);
 								break;
 							case CAR:
-								success &= proxyCar.votePhase(txnID);
+								success &= proxyCar.prepare(txnID);
 								break;
 							case ROOM:
-								success &= proxyRoom.votePhase(txnID);
+								success &= proxyRoom.prepare(txnID);
 								break;
 							default:
 								break;
