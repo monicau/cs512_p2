@@ -33,11 +33,13 @@ import javax.jws.WebService;
 
 import server.ItemHistory.Action;
 import server.ItemHistory.ItemType;
-import server.Logger.Type;
+import server.Logger2PC.Type;
 import server.ws.ResourceManager;
 import lockmanager.DeadlockException;
 import lockmanager.LockManager;
 import TransactionManager.InvalidTransactionException;
+import TransactionManager.TransactionAbortedException;
+import TransactionManager.TransactionTimer;
 
 import com.google.gson.Gson;
 
@@ -54,7 +56,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	
 	private TransactionTimer timer;
 	
-	private Logger logger;
+	private Logger2PC logger;
 	
 	private AtomicInteger lastTrxnID = new AtomicInteger(0);
 	
@@ -213,7 +215,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		}
 		// Create shadower and try to recover
 		shadower = new Shadower(type);
-		logger = new Logger(Type.valueOf(type));
+		logger = new Logger2PC(Type.valueOf(type));
 		RMMap recovery = shadower.recover();
 		if (recovery != null) m_itemHT = recovery;
 	}
@@ -813,6 +815,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		boolean r = transactionsIds.stream()
 										.map(txn -> abort(txn))
 										.reduce(true, (x,y)-> x&&y);
+		timer.kill();
 		// Schedule a shutdown
 		new TimedExit();
 		return r;

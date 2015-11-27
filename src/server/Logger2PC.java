@@ -10,7 +10,7 @@ import java.io.PrintWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class Logger {
+public class Logger2PC {
 
 	private Type type;
 	public enum Type{
@@ -21,7 +21,7 @@ public class Logger {
 			this.location.toFile().mkdirs();
 		}
 	}
-	public Logger(Type type) {
+	public Logger2PC(Type type) {
 		this.type = type;
 	}
 	

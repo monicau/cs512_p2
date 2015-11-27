@@ -13,11 +13,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import server.Logger;
+import server.Logger2PC;
 import server.MiddlewareImpl;
 import server.RMMap;
 import server.ResourceManager;
-import server.Logger.Type;
+import server.Logger2PC.Type;
 
 
 public class TransactionManager {
@@ -35,9 +35,9 @@ public class TransactionManager {
 
 	private Thread sweeper;
 
-	private Logger logger;
+	private Logger2PC logger;
 	
-	public TransactionManager(MiddlewareImpl middleware, ResourceManager flight, ResourceManager car, ResourceManager room, int timeToLive) {
+	public TransactionManager(MiddlewareImpl middleware, ResourceManager flight, ResourceManager car, ResourceManager room) {
 		activeRMs = new RMMap<Integer, Vector<RM>>();
 		timeAlive = new RMMap<Integer, Integer>();
 		txnCounter = new AtomicInteger();
@@ -47,9 +47,8 @@ public class TransactionManager {
 		proxyFlight = flight;
 		proxyCar = car;
 		proxyRoom = room;
-		ttl = timeToLive;
 		
-		this.logger = new Logger(Type.coordinator);
+		this.logger = new Logger2PC(Type.coordinator);
 	}
 	
 	public boolean isValidTransaction(int txnID) {
@@ -237,24 +236,24 @@ public class TransactionManager {
 	}
 
 	// Tell us the txn is alive
-	public void ping(int txnID) {
-		// Reset time to live for this txn
-		new Thread(()->{
-			try{
-				timeAlive.replace(txnID, ttl);
-			}
-			catch(ConcurrentModificationException e){
-				try {
-					Thread.sleep(1);
-				} catch (Exception e1) {
-					e1.printStackTrace();
-				}
-				ping(txnID);
-			}
-		}).start();
-	}
+//	public void ping(int txnID) {
+//		// Reset time to live for this txn
+//		new Thread(()->{
+//			try{
+//				timeAlive.replace(txnID, ttl);
+//			}
+//			catch(ConcurrentModificationException e){
+//				try {
+//					Thread.sleep(1);
+//				} catch (Exception e1) {
+//					e1.printStackTrace();
+//				}
+//				ping(txnID);
+//			}
+//		}).start();
+//	}
 	
-	public void stopHeartbeatSweeper(){
-		this.sweeper.interrupt();
-	}
+//	public void stopHeartbeatSweeper(){
+//		this.sweeper.interrupt();
+//	}
 }

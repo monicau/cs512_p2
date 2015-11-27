@@ -46,11 +46,12 @@ import java.nio.channels.AsynchronousServerSocketChannel;
 import javax.jws.WebMethod;
 import javax.jws.WebService;
 
-import server.Logger.Type;
+import server.Logger2PC;
 import lockmanager.DeadlockException;
 import lockmanager.LockManager;
 import TransactionManager.InvalidTransactionException;
 import TransactionManager.TransactionManager;
+import TransactionManager.TransactionTimer;
 import TransactionManager.TransactionManager.RM;
 
 import com.google.gson.Gson;
@@ -78,17 +79,17 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	private TCPServiceRequest tcp;
 	protected RMMap m_itemHT = new RMMap<>();
 
-	private Logger logger;
-	
-	TransactionTimer timer;
+	private Logger2PC logger;
+	private TransactionTimer timer;
 	
 	public MiddlewareImpl(){
 		System.out.println("Starting middleware");
-		this.timer = new TransactionTimer(25000, this::abortCustomer);
+		this.timer = new TransactionTimer(60000, this::abortCustomer);
 		this.timer.start();
 		lm = new LockManager();
 		txnHistory = new RMMap<Integer, Vector<ItemHistory>>();
 		shadower = new Shadower("mw"); 
+		//Try to recover any saved state
 		RMMap recovery = shadower.recover();
 		if (recovery != null ) {
 			System.out.println("MW:: Recovered data");
@@ -154,7 +155,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			} catch (FileNotFoundException e) {
 				Trace.info("ERROR: File not found!");
 			}
-			tm = new TransactionManager(this, proxyFlight, proxyCar, proxyRoom, 60000);
+			tm = new TransactionManager(this, proxyFlight, proxyCar, proxyRoom);
 			int txnCounter = shadower.recoverTxnID();
 			if (txnCounter > 0) {
 				tm.setTxnCounter(txnCounter);
@@ -329,8 +330,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			}
 		}
 		
-		
-		this.logger = new Logger(Type.customer);
+		this.logger = new Logger2PC(Logger2PC.Type.customer);
 	}
 
 	// Basic operations on RMItem //
@@ -405,7 +405,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
 		Trace.info("MW::addFlight(" + id + ", " + flightNumber 
 				+ ", $" + flightPrice + ", " + numSeats + ") called.");
-		tm.ping(id);
+		timer.ping(id);
 		tm.enlist(id, RM.FLIGHT);
 		boolean r = true;
 		try {
@@ -424,7 +424,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean deleteFlight(int id, int flightNumber) throws DeadlockException, InvalidTransactionException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
-		tm.ping(id);
+		timer.ping(id);
 		tm.enlist(id, RM.FLIGHT);
 		try {
 			return proxyFlight.deleteFlight(id, flightNumber);
@@ -441,7 +441,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public int queryFlight(int id, int flightNumber) throws DeadlockException, InvalidTransactionException{
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
-		tm.ping(id);
+		timer.ping(id);
 		tm.enlist(id, RM.FLIGHT);
 		try {
 			return proxyFlight.queryFlight(id, flightNumber);
@@ -457,7 +457,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Returns price of this flight.
 	public int queryFlightPrice(int id, int flightNumber) throws DeadlockException, InvalidTransactionException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
-		tm.ping(id);
+		timer.ping(id);
 		tm.enlist(id, RM.FLIGHT);
 		try {
 			return proxyFlight.queryFlightPrice(id, flightNumber);
@@ -517,7 +517,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
 		Trace.info("MW::addCars(" + id + ", " + location + ", " 
 				+ numCars + ", $" + carPrice + ") called.");
-		tm.ping(id);
+		timer.ping(id);
 		tm.enlist(id, RM.CAR);
 		boolean r = true;
 		try {
@@ -537,7 +537,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean deleteCars(int id, String location) throws DeadlockException, InvalidTransactionException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
-		tm.ping(id);
+		timer.ping(id);
 		tm.enlist(id, RM.CAR);
 		try {
 			return proxyCar.deleteCars(id, location);
@@ -554,7 +554,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public int queryCars(int id, String location) throws DeadlockException, InvalidTransactionException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
-		tm.ping(id);
+		timer.ping(id);
 		tm.enlist(id, RM.CAR);
 		try {
 			return proxyCar.queryCars(id, location);
@@ -571,7 +571,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public int queryCarsPrice(int id, String location) throws DeadlockException, InvalidTransactionException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
-		tm.ping(id);
+		timer.ping(id);
 		tm.enlist(id, RM.CAR);
 		try {
 			return proxyCar.queryCarsPrice(id, location);
@@ -595,7 +595,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
 		Trace.info("MW::addRooms(" + id + ", " + location + ", " 
 				+ numRooms + ", $" + roomPrice + ") called.");
-		tm.ping(id);
+		timer.ping(id);
 		tm.enlist(id, RM.ROOM);
 		boolean r = true;
 		try {
@@ -615,7 +615,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean deleteRooms(int id, String location) throws DeadlockException, InvalidTransactionException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
-		tm.ping(id);
+		timer.ping(id);
 		tm.enlist(id, RM.ROOM);
 		try {
 			return proxyRoom.deleteRooms(id, location);
@@ -632,7 +632,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public int queryRooms(int id, String location) throws DeadlockException, InvalidTransactionException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
-		tm.ping(id);
+		timer.ping(id);
 		tm.enlist(id, RM.ROOM);
 		try {
 			return proxyRoom.queryRooms(id, location);
@@ -649,7 +649,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public int queryRoomsPrice(int id, String location) throws DeadlockException, InvalidTransactionException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
-		tm.ping(id);
+		timer.ping(id);
 		tm.enlist(id, RM.ROOM);
 		try {
 			return proxyRoom.queryRoomsPrice(id, location);
@@ -669,7 +669,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public int newCustomer(int id) throws DeadlockException, InvalidTransactionException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
 		Trace.info("INFO: MW::newCustomer(" + id + ") called.");
-		tm.ping(id);
+		timer.ping(id);
 		tm.enlist(id, RM.CUSTOMER);
 		// Generate a globally unique Id for the new customer.
 		int customerId;
@@ -695,7 +695,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean newCustomerId(int id, int customerId) throws DeadlockException, InvalidTransactionException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
-		tm.ping(id);
+		timer.ping(id);
 		Trace.info("INFO: MW::newCustomer(" + id + ", " + customerId + ") called.");
 		tm.enlist(id, RM.CUSTOMER);
 		//Lock on new customer
@@ -722,7 +722,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public boolean deleteCustomer(int id, int customerId) throws DeadlockException, InvalidTransactionException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
 		Trace.info("MW::deleteCustomer(" + id + ", " + customerId + ") called.");
-		tm.ping(id);
+		timer.ping(id);
 		tm.enlist(id, RM.CUSTOMER);
 		//Write lock on customer
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
@@ -776,7 +776,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
 		Trace.info("MW::getCustomerReservations(" + id + ", " 
 				+ customerId + ") called.");
-		tm.ping(id);
+		timer.ping(id);
 		tm.enlist(id, RM.CUSTOMER);
 		// Read lock on customer
 		lm.Lock(id, "customer_" + customerId, LockManager.READ);
@@ -795,7 +795,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public String queryCustomerInfo(int id, int customerId) throws DeadlockException, InvalidTransactionException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
 		Trace.info("MW::queryCustomerInfo(" + id + ", " + customerId + ") called.");
-		tm.ping(id);
+		timer.ping(id);
 		tm.enlist(id, RM.CUSTOMER);
 		// Read lock on customer
 		lm.Lock(id, "customer_" + customerId, LockManager.READ);
@@ -826,7 +826,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean reserveFlight(int id, int customerId, int flightNumber) throws DeadlockException, InvalidTransactionException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
-		tm.ping(id);
+		timer.ping(id);
 		// Read customer object if it exists (and read lock it).
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		tm.enlist(id, RM.CUSTOMER);
@@ -873,7 +873,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean reserveCar(int id, int customerId, String location) throws DeadlockException, InvalidTransactionException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
-		tm.ping(id);
+		timer.ping(id);
 		// Read customer object if it exists (and read lock it).
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		tm.enlist(id, RM.CUSTOMER);
@@ -920,7 +920,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean reserveRoom(int id, int customerId, String location) throws DeadlockException, InvalidTransactionException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
-		tm.ping(id);
+		timer.ping(id);
 		// Read customer object if it exists (and read lock it).
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
 		tm.enlist(id, RM.CUSTOMER);
@@ -968,7 +968,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean reserveItinerary(int id, int customerId, Vector flightNumbers, String location, boolean car, boolean room) throws DeadlockException, InvalidTransactionException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
-		tm.ping(id);
+		timer.ping(id);
 		Trace.info("MW::reserve itinerary");
 		// Enlist resource managers
 		if (flightNumbers.size()>0) tm.enlist(id, RM.FLIGHT);
@@ -1167,7 +1167,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean shutdown() {
 		//TODO persistent data handling
-		tm.stopHeartbeatSweeper();
+		timer.kill();
 		Set<Integer> transactionsIds = new HashSet<>(txnHistory.keySet()); //prevent concurrent modification of map
 		boolean r = transactionsIds.stream()
 										.map(txn -> {
@@ -1301,7 +1301,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	
 	@Override
 	public void selfDestruct() {
-		tm.stopHeartbeatSweeper();
+		timer.kill();
 		// Schedule a shutdown
 		new TimedExit();
 	}

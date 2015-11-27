@@ -1,4 +1,4 @@
-package server;
+package TransactionManager;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -20,6 +20,7 @@ public class TransactionTimer {
 	public enum State{
 		Active, Aborted, Committed;
 	}
+	
 	Map<Integer, Txn> transactions = new ConcurrentHashMap<>();
 	private long ttl;
 	private Function<Integer, Boolean> abort;
@@ -29,6 +30,7 @@ public class TransactionTimer {
 		this.abort = abort;
 	}
 	
+	// Start the timer
 	public void start(){
 		thread = new Thread(() ->{
 			while(!Thread.interrupted()){
@@ -56,7 +58,9 @@ public class TransactionTimer {
 	}
 	
 	public void ping(int id){
+		// Add transaction to map if it doesn't exist
 		transactions.computeIfAbsent(id, i -> new Txn());
+		// Reset its time
 		transactions.get(id).time = System.currentTimeMillis();
 	}
 	

@@ -22,9 +22,9 @@ import javax.jws.WebService;
 import javax.jws.WebMethod;
 
 import TransactionManager.InvalidTransactionException;
+import TransactionManager.TransactionAbortedException;
 import server.Customer;
 import server.RMItem;
-import server.TransactionAbortedException;
 import lockmanager.DeadlockException;
 
 
