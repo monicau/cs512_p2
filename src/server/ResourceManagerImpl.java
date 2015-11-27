@@ -198,26 +198,39 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		
 		
 		// what if flight doesnt exist then car and room will never be checked
-		File flight = new File("flight.txt");
-		if (flight.exists()) {
-			flight.delete();
-			type = "flight";
-		} else {
-			File car = new File("car.txt");
-			if (car.exists()) {
-				car.delete();
-				type = "car";
+		int count = 0;
+		while (type==null && count < 10) {
+			System.out.println("RM:: trying to find its purpose...");
+			File flight = new File("flight.txt");
+			if (flight.exists()) {
+				flight.delete();
+				type = "flight";
 			} else {
-				File room = new File("room.txt");
-				room.delete();
-				type = "room";
+				File car = new File("car.txt");
+				if (car.exists()) {
+					car.delete();
+					type = "car";
+				} else {
+					File room = new File("room.txt");
+					if (room.exists()) {
+						room.delete();
+						type = "room";
+					}
+				}
 			}
+			count++;
 		}
+		if (type==null) return;
+		System.out.println("RM:: Found its purpose: " + type);
 		// Create shadower and try to recover
 		shadower = new Shadower(type);
 		logger = new Logger2PC(Type.valueOf(type));
 		RMMap recovery = shadower.recover();
-		if (recovery != null) m_itemHT = recovery;
+		if (recovery != null) {
+			System.out.println("Recovered data for " + type);
+			System.out.println(recovery);
+			m_itemHT = recovery;
+		}
 	}
 
 	void getPort(Consumer<Integer> onGetPort) throws InterruptedException {
@@ -322,6 +335,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		ReservableItem curObj = (ReservableItem) readData(id, key);
 		int value = 0;
 		if (curObj != null) {
+			Trace.info("RM:: Found item, its count is " + curObj.getCount());
 			value = curObj.getCount();
 		}
 		Trace.info("RM::queryNum(" + id + ", " + key + ") OK: " + value);
@@ -761,7 +775,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		Trace.info("RM:: received abort request");
 		Vector<ItemHistory> history = txnHistory.remove(transactionId); // pop the item from map
 		if (history != null) {
-			Trace.info("RM:: Reverting changes...");
+			Trace.info("RM:: Reverting changes for " + transactionId);
 			for (ItemHistory entry : history) {
 				switch (entry.getAction()) {
 				case ADDED:
@@ -804,7 +818,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 				}
 			}
 		}
-		shadower.prepareCommit(m_itemHT);
 		return this.unlock(transactionId);
 	}
 

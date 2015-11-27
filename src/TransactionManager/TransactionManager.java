@@ -84,18 +84,19 @@ public class TransactionManager {
 						for (RM rm : rms) {
 							switch (rm) {
 							case CUSTOMER:
-								System.out.println("TM:: clearing txn history and unlocking customer");
+								System.out.println("TM:: sending vote request to customer");
 								success &= mw.prepare(txnID);
 								break;
 							case FLIGHT:
-								System.out.println("TM:: clearing txn history and unlocking flight");
-								// remove transaction and unlock in one message
+								System.out.println("TM:: sending vote request to flight");
 								success &= proxyFlight.prepare(txnID);
 								break;
 							case CAR:
+								System.out.println("TM:: sending vote request to car");
 								success &= proxyCar.prepare(txnID);
 								break;
 							case ROOM:
+								System.out.println("TM:: sending vote request to room");
 								success &= proxyRoom.prepare(txnID);
 								break;
 							default:
@@ -108,11 +109,7 @@ public class TransactionManager {
 				} catch (Exception e) {
 					throw new InvalidTransactionException();
 				}
-				System.out.println("TM:: Unlock all locks held by this transaction: " + success); 
-				//Remove rm's from activeRM 
-				delist(txnID);
-				int index = activeTransactions.indexOf(txnID);
-				activeTransactions.removeElementAt(index);
+				System.out.println("TM:: vote decision: " + success); 
 				return success;
 			}
 		};
@@ -128,27 +125,32 @@ public class TransactionManager {
 		pool.shutdownNow();
 		try {
 			if(successful == null ){
-				// this is timeout
+				// Timeout before receiving all votes. Send out abort
+				System.out.println("TM:: timeout before receiving all votes. Sending abort..");
 				this.logger.log(txnID+","+false);
 				for (RM rm : rms) {
 					switch (rm){
 					case CAR:
+						System.out.println("TM:: Aborting car");
 						proxyCar.abort(txnID);
 						break;
 					case FLIGHT:
+						System.out.println("TM:: Aborting flight");
 						proxyFlight.abort(txnID);
 						break;
 					case ROOM:
+						System.out.println("TM:: Aborting room");
 						proxyRoom.abort(txnID);
 						break;
 					case CUSTOMER:
+						System.out.println("TM:: Aborting customer");
 						mw.abortCustomer(txnID);
 						break;
 					}
 				}
 				return false;
 			}
-			
+			System.out.println("TM:: sending decision: " + successful);
 			this.logger.log(txnID+","+successful);
 			for (RM rm : rms) {
 				switch (rm){
@@ -166,6 +168,9 @@ public class TransactionManager {
 					break;
 				}
 			}
+			//Remove rm's from activeRM 
+			int index = activeTransactions.indexOf(txnID);
+			activeTransactions.removeElementAt(index);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

@@ -134,6 +134,7 @@ public class Shadower {
 	
 	// update the master to point to the current working data file
 	public void actualCommit() {
+		System.out.println("S:: Doing actual commit... ");
 		if (workingVersion == version.A) {
 			workingVersion = version.B;
 			committedVersion = version.A;
