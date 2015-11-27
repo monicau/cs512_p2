@@ -66,7 +66,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
 	public ResourceManagerImpl() {
 		lm = new LockManager();
-		this.timer = new TransactionTimer(25000, this::abort);
+		this.timer = new TransactionTimer(60000, this::abort);
 		this.timer.start();
 		txnHistory = new RMMap<Integer, Vector<ItemHistory>>();
 		// Determine if we are using web services or tcp

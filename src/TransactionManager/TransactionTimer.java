@@ -38,9 +38,9 @@ public class TransactionTimer {
 				while(it.hasNext()){
 					
 					Entry<Integer, Txn> transaction = it.next();
-					
 					if(transaction.getValue().state == State.Active){
-						if(transaction.getValue().time - System.currentTimeMillis() > ttl ){
+						if(System.currentTimeMillis() - transaction.getValue().time > ttl ){
+							System.out.println("Sweeper detects old txn! aborting " + transaction.getKey());
 							transaction.getValue().state = State.Aborted;
 							Boolean success = abort.apply(transaction.getKey());
 							if(!success) System.out.println("Failed to abort; Aborting to abort");
