@@ -23,6 +23,7 @@ import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -870,6 +871,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		System.out.println("Self destructing....");
 		timer.kill();
 		new TimedExit();
+	}
+	
+	@Override
+	public String getType() {
+		return type;
 	}
 
 	@Override

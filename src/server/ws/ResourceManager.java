@@ -178,6 +178,10 @@ public interface ResourceManager {
     @WebMethod
     public void crash(String target);
     
+    /* Get resource type */
+    @WebMethod
+    public String getType();
+    
     @WebMethod
     public void selfDestruct();
 

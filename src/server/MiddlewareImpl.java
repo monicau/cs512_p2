@@ -135,17 +135,56 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 					roomServiceHost = line[4];
 					roomServicePort = Integer.parseInt(line[5]);
 					try {
+						ResourceManager proxy;
+						
 						URL wsdlLocation = new URL("http", flightServiceHost, flightServicePort, "/" + "rm" + "/rm?wsdl");
 						service = new ResourceManagerImplService(wsdlLocation);
-						proxyFlight = service.getResourceManagerImplPort();
+						proxy = service.getResourceManagerImplPort();
+						
+						String rmType = proxy.getType();
+						if (rmType.equals("flight")) {
+							System.out.println("Established flight proxy");
+							proxyFlight = proxy;
+						} else if (rmType.equals("car")) {
+							System.out.println("Established car proxy");
+							proxyCar = proxy;
+						} else {
+							System.out.println("Established room proxy");
+							proxyRoom = proxy;
+						}
 
 						wsdlLocation = new URL("http", carServiceHost, carServicePort, "/" + "rm" + "/rm?wsdl");
 						service = new ResourceManagerImplService(wsdlLocation);
-						proxyCar= service.getResourceManagerImplPort();
+						proxy= service.getResourceManagerImplPort();
+						
+						rmType = proxy.getType();
+						if (rmType.equals("flight")) {
+							System.out.println("Established flight proxy");
+							proxyFlight = proxy;
+						} else if (rmType.equals("car")) {
+							System.out.println("Established car proxy");
+							proxyCar = proxy;
+						} else {
+							System.out.println("Established room proxy");
+							proxyRoom = proxy;
+						}
 
 						wsdlLocation = new URL("http", roomServiceHost, roomServicePort, "/" + "rm" + "/rm?wsdl");
 						service = new ResourceManagerImplService(wsdlLocation);
-						proxyRoom= service.getResourceManagerImplPort();
+						proxy = service.getResourceManagerImplPort(); 
+						
+						rmType = proxy.getType();
+						if (rmType.equals("flight")) {
+							System.out.println("Established flight proxy");
+							proxyFlight = proxy;
+						} else if (rmType.equals("car")) {
+							System.out.println("Established car proxy");
+							proxyCar = proxy;
+						} else {
+							System.out.println("Established room proxy");
+							proxyRoom = proxy;
+						}
+						
 					} catch (MalformedURLException e) {
 						Trace.info("ERROR!! Malformed url.");
 					}
@@ -1292,6 +1331,12 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		timer.kill();
 		// Schedule a shutdown
 		new TimedExit();
+	}
+
+	@Override
+	public String getType() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }
 
