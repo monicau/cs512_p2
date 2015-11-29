@@ -882,8 +882,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	public boolean prepare(int transactionId) throws InvalidTransactionException, TransactionAbortedException{
 		Trace.info("RM:: commiting transaction "+transactionId);
 		// sanity check
+		
 		if(txnHistory.get(transactionId) == null) throw new InvalidTransactionException("No such transaction "+transactionId);
+		if (timer.isAborted(transactionId)) throw new TransactionAbortedException("Transaction aborted " + transactionId);
+		
 		txnHistory.remove(transactionId);
+		
+		// Write the data to a version file
 		shadower.prepareCommit(m_itemHT);
 		
 		// log the event
@@ -894,13 +899,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
 	@Override
 	public boolean decisionPhase(int transactionId, boolean commit) {
-		// log the event
 		if(commit){
 			shadower.actualCommit();
 		}
 		else{
 			this.abort(transactionId);
 		}
+		// log the event
 		this.logger.log(transactionId+", ,"+commit);
 		this.unlock(transactionId);
 		return true;

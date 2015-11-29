@@ -67,4 +67,9 @@ public class TransactionTimer {
 	public void kill(){
 		thread.interrupt();
 	}
+	
+	public boolean isAborted(int id) {
+		// Tells us if transaction is aborted or not
+		return transactions.get(id).state == State.Aborted;
+	}
 }
