@@ -182,9 +182,19 @@ public interface ResourceManager {
     @WebMethod
     public String getType();
     
+    /* Kill itself */
     @WebMethod
     public void selfDestruct();
 
+    /* Tell MW who and where to crash */
+    @WebMethod
+    public void crashPoint(String target, int crashPoint);
+    
+    /* Set RM/MW to crash at specific place */
+    @WebMethod
+    public void setCrashPoint(int crashPoint);
+    
+    
     public void removeTxn(int txnID);
 	public boolean unlock(int txnID);                                                    
 	public RMItem readFromStorage(int id, String key);                        

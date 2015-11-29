@@ -13,6 +13,6 @@ public class TimedExit {
 	};
 	
 	public TimedExit() {
-		timer.schedule(exitProgram, new Date(System.currentTimeMillis()+5*1000));
+		timer.schedule(exitProgram, new Date(System.currentTimeMillis()+1000));
 	}
 }

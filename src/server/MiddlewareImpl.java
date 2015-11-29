@@ -81,11 +81,13 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	private Logger2PC logger;
 	private TransactionTimer timer;
+	private int crashPoint;
 	
 	public MiddlewareImpl(){
 		System.out.println("Starting middleware");
 		this.timer = new TransactionTimer(60000, this::abortCustomer);
 		this.timer.start();
+		this.crashPoint = -1;
 		lm = new LockManager();
 		txnHistory = new RMMap<Integer, Vector<ItemHistory>>();
 		shadower = new Shadower("mw"); 
@@ -1326,6 +1328,24 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		}
 	}
 	
+	@Override
+	public void crashPoint(String target, int crashPoint) {
+		System.out.println("MW:: crashing " + target);
+		if (target.equals("mw")) {
+			setCrashPoint(crashPoint);
+		} else if (target.equals("flight")) {
+			proxyFlight.setCrashPoint(crashPoint);
+		} else if (target.equals("car")) {
+			proxyCar.setCrashPoint(crashPoint);
+		} else if (target.equals("room")) {
+			proxyRoom.setCrashPoint(crashPoint);
+		}
+	}
+	
+	@Override
+	public void setCrashPoint(int crashPoint) {
+		this.crashPoint = crashPoint;
+	}
 	@Override
 	public void selfDestruct() {
 		timer.kill();

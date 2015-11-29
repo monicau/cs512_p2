@@ -52,6 +52,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	private LockManager lm;
 	private Shadower shadower;
 	private String type;
+	private int crashPoint;
 //	ResourceManager proxyMW;
 //	ResourceManagerImplService service;
 	
@@ -69,6 +70,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		lm = new LockManager();
 		this.timer = new TransactionTimer(60000, this::abort);
 		this.timer.start();
+		this.crashPoint = -1;
 		txnHistory = new RMMap<Integer, Vector<ItemHistory>>();
 		// Determine if we are using web services or tcp
 		try {
@@ -909,5 +911,16 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		this.logger.log(transactionId+", ,"+commit);
 		this.unlock(transactionId);
 		return true;
+	}
+
+	// for MW only
+	@Override
+	public void crashPoint(String target, int crashPoint) {
+	}
+
+	@Override
+	public void setCrashPoint(int crashPoint) {
+		this.crashPoint = crashPoint;
+		
 	}
 }
