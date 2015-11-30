@@ -57,14 +57,23 @@ where target is mw, flight, car or room
 ####Crash points
 
 1 - Crash coordinator before sending vote request
+
 2 - Crash coordinator after sending vote request and before receiving any replies
+
 3 - Crash coordinator after receiving some replies but not all
+
 4 - Crash coordinator after receiving all replies but before deciding
+
 5 - Crash coordinator after deciding but before sending decision
+
 6 - Crash coordinator after sending some but not all decisions
+
 7 - Crash coordinator after having sent all decisions
+
 8 - Crash RM after receiving vote request but before sending answer
+
 9 - Crash RM after sending answer
+
 10 - Crash RM after receiving decision but before committing/aborting
 
 ###How to change RM's vote answer
