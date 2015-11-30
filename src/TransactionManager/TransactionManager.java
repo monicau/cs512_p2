@@ -113,7 +113,8 @@ public class TransactionManager {
 						System.out.println("TM:: no RMs involved in this txn.  Committing nothing..");
 					}
 				} catch (Exception e) {
-					throw new InvalidTransactionException();
+					// One of the RM's consider the transaction invalid/aborted 
+					success = false;
 				}
 				System.out.println("TM:: vote decision: " + success); 
 				return success;
@@ -168,15 +169,19 @@ public class TransactionManager {
 			for (RM rm : rms) {
 				switch (rm){
 				case CAR:
+					System.out.println("Sending decision to car.. ");
 					proxyCar.decisionPhase(txnID, successful);
 					break;
 				case FLIGHT:
+					System.out.println("Sending decision to flight.. ");
 					proxyFlight.decisionPhase(txnID, successful);
 					break;
 				case ROOM:
+					System.out.println("Sending decision to room.. ");
 					proxyRoom.decisionPhase(txnID, successful);
 					break;
 				case CUSTOMER:
+					System.out.println("Sending decision to mw.. ");
 					mw.decisionPhase(txnID, successful);
 					break;
 				}

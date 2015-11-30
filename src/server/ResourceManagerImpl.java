@@ -888,7 +888,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
 	@Override
 	public boolean prepare(int transactionId) throws InvalidTransactionException, TransactionAbortedException{
-		Trace.info("RM:: commiting transaction "+transactionId);
+		Trace.info("RM:: Received vote request for "+transactionId);
 		
 		// sanity check
 		if(txnHistory.get(transactionId) == null) throw new InvalidTransactionException("No such transaction "+transactionId);
@@ -933,6 +933,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
 	@Override
 	public void setCrashPoint(int crashPoint) {
+		System.out.println("RM:: setting crash point to " + crashPoint);
 		this.crashPoint = crashPoint;
 		
 	}
