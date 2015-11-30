@@ -75,9 +75,10 @@ public class TransactionManager {
 			BufferedReader br = new BufferedReader(new InputStreamReader(in));
 			
 			String line = null;
+			StringTokenizer tokens;
 			while ((line = br.readLine()) != null) {
 				System.out.println("Read: " + line);
-				StringTokenizer tokens = new StringTokenizer(line, ",");
+				tokens = new StringTokenizer(line, ",");
 				if (tokens.countTokens() == 1) {
 					int txn = Integer.parseInt(tokens.nextToken());
 					System.out.println("Log finds start of txn " + txn);
@@ -85,7 +86,8 @@ public class TransactionManager {
 					// Read next line to see if this txn completed
 					line = br.readLine();
 					System.out.println("Next line: " + line);
-					if (line == null || (new StringTokenizer(line, ",").countTokens() != 2)) {
+					if (line == null || (tokens = new StringTokenizer(line, ",")).countTokens() != 2) {
+						// Transaction with undecided outcome
 						// Finish the 2PC for this transaction by sending abort 
 						System.out.println("Detect unfinished 2PC protocol. Sending abort of txn " + txn);
 						try {
@@ -110,8 +112,34 @@ public class TransactionManager {
 						}
 						
 						if (line == null) return;
-					} else {
-						continue;
+					} 
+					else if (tokens.countTokens() == 2) {
+						// Coordinator has either sent decision to all resource managers, to some, or none
+						// Resend decision
+						int txn2 = Integer.parseInt(tokens.nextToken());
+						if (txn2 != txn) System.out.println("Transaction logging out of order! What!");
+						boolean decision = Boolean.parseBoolean(tokens.nextToken());
+						try {
+							mw.decisionPhase(txn, decision);
+						} catch (Exception e) {
+							// May receive invalid/aborted exception since it might have timed out at RM's
+						}
+						try {
+							proxyFlight.decisionPhase(txn, decision);
+						} catch (Exception e) {
+							// May receive invalid/aborted exception since it might have timed out at RM's
+						}
+						try {
+							proxyCar.decisionPhase(txn, decision);
+						} catch (Exception e) {
+							// May receive invalid/aborted exception since it might have timed out at RM's
+						}
+						try {
+							proxyRoom.decisionPhase(txn, decision);
+						} catch (Exception e) {
+							// May receive invalid/aborted exception since it might have timed out at RM's
+						}
+
 					}
 				} 
 			}

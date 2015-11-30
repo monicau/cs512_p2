@@ -775,7 +775,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	/* Abort the given transaction */
 	@Override
 	public boolean abort(int transactionId) {
-		Trace.info("RM:: received abort request");
+		Trace.info("RM:: received abort request for txn " + transactionId);
 		Vector<ItemHistory> history = txnHistory.remove(transactionId); // pop the item from map
 		if (history != null) {
 			Trace.info("RM:: Reverting changes for " + transactionId);
@@ -894,7 +894,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		if(txnHistory.get(transactionId) == null) throw new InvalidTransactionException("No such transaction "+transactionId);
 		if (timer.isAborted(transactionId)) throw new TransactionAbortedException("Transaction aborted " + transactionId);
 		
-		txnHistory.remove(transactionId);
 		
 		// Write the data to a version file
 		shadower.prepareCommit(m_itemHT);
@@ -911,7 +910,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
 	@Override
 	public boolean decisionPhase(int transactionId, boolean commit) {
-		
+		System.out.println("RM:: Received decision for " + transactionId + ": " + commit);
 		if (crashPoint == 10) selfDestruct();
 		
 		if(commit){
@@ -920,6 +919,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		else{
 			this.abort(transactionId);
 		}
+
+		txnHistory.remove(transactionId);
+
 		// log the event
 		this.logger.log(transactionId+", ,"+commit);
 		this.unlock(transactionId);

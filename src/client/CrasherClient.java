@@ -50,16 +50,43 @@ public class CrasherClient extends WSClient {
 		print("\t Crash coordinator after sending vote request and before receiving any replies");
 		if (userSaidYes(stdin)) {
 			proxy.crashPoint("mw", 2);
+			// TODO
 		}
 		print("Do test 3? (Y/n)");
 		print("\t Crash coordinator after receiving some replies but not all");
 		if (userSaidYes(stdin)) {
-			proxy.crashPoint("mw", 3);
+			try {
+				proxy.crashPoint("mw", 3);
+				int id = proxy.start();
+				print("Started new transaction: " + id);
+				print("Running newFlight(" + id +",3,3,3)");
+				proxy.addFlight(id,3,3,3);
+				print("Committing transaction...");
+				boolean r = proxy.commit(id);
+				print("Commit result: " + r);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		print("Do test 4? (Y/n)");
 		print("\t Crash coordinator after receiving all replies but before deciding");
 		if (userSaidYes(stdin)) {
-			proxy.crashPoint("mw", 4);
+			try {
+				proxy.crashPoint("mw", 4);
+				int id = proxy.start();
+				print("Started new transaction: " + id);
+				print("Running newFlight(" + id +",4,4,4)");
+				proxy.addFlight(id,4,4,4);
+				print("Running newCar(" + id +",car4,4,4)");
+				proxy.addCars(id,"car4",4,4);
+				print("Running newRoom(" + id +",room4,4,4)");
+				proxy.addRooms(id,"room4",4,4);
+				print("Committing transaction...");
+				boolean r = proxy.commit(id);
+				print("Commit result: " + r);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		print("Do test 5? (Y/n)");
 		print("\t Crash coordinator after deciding but before sending decision");
