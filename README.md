@@ -54,6 +54,10 @@ for multiple client system analysis, launch this client.
 
 where target is mw, flight, car or room
 
+``` crashAt,target,location ```
+
+where location is one of the crash point numbers below
+
 ####Crash points
 
 1 - Crash coordinator before sending vote request
