@@ -1349,9 +1349,9 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	
 	@Override
 	public void selfDestruct() {
+		System.out.println("Self destructing... ");
 		timer.kill();
-		// Schedule a shutdown
-		new TimedExit();
+		System.exit(0);
 	}
 
 	@Override

@@ -341,6 +341,19 @@
             <arg value="${service.type}"/>
         </java>
     </target>
+    
+    <target name="crasher" depends="build-client">
+        <java classname="client.CrasherClient">
+            <classpath>
+                <path refid="jaxws.classpath"/>
+                <pathelement location="${basedir}/build/classes"/>
+            </classpath>
+            <arg value="${service.name}"/>
+            <arg value="${service.host}"/>
+            <arg value="${service.port}"/>
+            <arg value="${service.type}"/>
+        </java>
+    </target>
 
     <target name="help">
         <echo message="server:  Builds and deploys the service"/>

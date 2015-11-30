@@ -872,7 +872,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		// Schedule a shutdown
 		System.out.println("Self destructing....");
 		timer.kill();
-		new TimedExit();
+		System.exit(0);
 	}
 	
 	public void selfDestructIn(int time) {
