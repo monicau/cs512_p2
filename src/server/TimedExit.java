@@ -13,6 +13,10 @@ public class TimedExit {
 	};
 	
 	public TimedExit() {
-		timer.schedule(exitProgram, new Date(System.currentTimeMillis()+1000));
+		timer.schedule(exitProgram, new Date(System.currentTimeMillis()));
+	}
+	
+	public TimedExit(int millisecondsToDie) {
+		timer.schedule(exitProgram, new Date(System.currentTimeMillis()+millisecondsToDie));
 	}
 }

@@ -641,6 +641,21 @@ public class Client extends WSClient {
                     //e.printStackTrace();
                 }
                 break;
+            case 28:
+            	if (arguments.size() != 3) {
+            		wrongNumber();
+                    break;
+            	}
+            	try {
+	                String target = getString(arguments.elementAt(1)).toLowerCase();
+	                int crashLocation = Integer.parseInt(getString(arguments.elementAt(2)).toLowerCase());
+	                proxy.crashPoint(target, crashLocation);
+            	}
+            	catch (Exception e) {
+            		System.out.println("EXCEPTION: ");
+                    System.out.println(e.getMessage());
+            	}
+                break;
             default:
                 System.out.println("The interface does not support this command.");
                 break;
@@ -715,6 +730,8 @@ public class Client extends WSClient {
             return 26;
         else if (argument.compareToIgnoreCase("crash") == 0) 
         	return 27;
+        else if (argument.compareToIgnoreCase("crashAt") == 0) 
+        	return 28;
         else
             return 666;
     }
@@ -946,12 +963,18 @@ public class Client extends WSClient {
                 System.out.println("\tshutdown");
             break;
             
-            case 27: //crash mw
+            case 27: //crash 
             	System.out.println("Crashes a server");
             	System.out.println("\nUsage: ");
                 System.out.println("\tcrash,target \t where target = mw, flight, car or room");
         	break;
             
+            case 28: //crash at specific time during 2PC
+            	System.out.println("Crashes a server at a specific time during 2PC");
+            	System.out.println("\nUsage: ");
+                System.out.println("\tcrashAt,target,location \t where target = mw, flight, car or room, location=1,2,3...");
+        	break;
+        	
             default:
             System.out.println(command);
             System.out.println("The interface does not support this command.");

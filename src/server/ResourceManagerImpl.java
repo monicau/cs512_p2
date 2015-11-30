@@ -875,6 +875,12 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		new TimedExit();
 	}
 	
+	public void selfDestructIn(int time) {
+		System.out.println("Self destructing in " + time + " ms");
+		timer.kill();
+		new TimedExit(time);
+	}
+	
 	@Override
 	public String getType() {
 		return type;
@@ -883,8 +889,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean prepare(int transactionId) throws InvalidTransactionException, TransactionAbortedException{
 		Trace.info("RM:: commiting transaction "+transactionId);
-		// sanity check
 		
+		// sanity check
 		if(txnHistory.get(transactionId) == null) throw new InvalidTransactionException("No such transaction "+transactionId);
 		if (timer.isAborted(transactionId)) throw new TransactionAbortedException("Transaction aborted " + transactionId);
 		
@@ -896,11 +902,18 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		// log the event
 		boolean answer = true;
 		this.logger.log(transactionId+","+answer);
+		
+		if (crashPoint == 8) System.exit(0);
+		if (crashPoint == 9) selfDestructIn(5000);
+		
 		return answer;
 	}
 
 	@Override
 	public boolean decisionPhase(int transactionId, boolean commit) {
+		
+		if (crashPoint == 10) selfDestruct();
+		
 		if(commit){
 			shadower.actualCommit();
 		}

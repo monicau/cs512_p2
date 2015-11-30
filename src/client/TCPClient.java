@@ -392,4 +392,16 @@ public class TCPClient extends TCPServiceRequest implements ResourceManager{
 		return null;
 	}
 
+	@Override
+	public void crashPoint(String target, int crashPoint) {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void setCrashPoint(int crashPoint) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

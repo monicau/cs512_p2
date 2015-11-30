@@ -194,7 +194,6 @@ public interface ResourceManager {
     @WebMethod
     public void setCrashPoint(int crashPoint);
     
-    
     public void removeTxn(int txnID);
 	public boolean unlock(int txnID);                                                    
 	public RMItem readFromStorage(int id, String key);                        

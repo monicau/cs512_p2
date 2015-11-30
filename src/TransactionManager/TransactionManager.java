@@ -37,11 +37,14 @@ public class TransactionManager {
 
 	private Logger2PC logger;
 	
+	private int crashPoint;
+	
 	public TransactionManager(MiddlewareImpl middleware, ResourceManager flight, ResourceManager car, ResourceManager room) {
 		activeRMs = new RMMap<Integer, Vector<RM>>();
 		timeAlive = new RMMap<Integer, Integer>();
 		txnCounter = new AtomicInteger();
 		activeTransactions = new Vector<Integer>();
+		crashPoint = -1;
 		
 		mw = middleware;
 		proxyFlight = flight;
@@ -70,6 +73,8 @@ public class TransactionManager {
 	}
 	synchronized public boolean commit(int txnID) throws InvalidTransactionException {
 		System.out.println("TM:: Committing transaction "+txnID);    
+		
+		if (crashPoint == 1) mw.selfDestruct();
 		
 		// Remove txn history on other resource managers and unlock locks
 		
@@ -102,6 +107,7 @@ public class TransactionManager {
 							default:
 								break;
 							}
+							if (crashPoint == 3) mw.selfDestruct();
 						}
 					} else {
 						System.out.println("TM:: no RMs involved in this txn.  Committing nothing..");
@@ -123,6 +129,10 @@ public class TransactionManager {
 			e.printStackTrace();
 		}
 		pool.shutdownNow();
+		
+		if (crashPoint == 8) return false;
+		if (crashPoint == 4) mw.selfDestruct();
+		
 		try {
 			if(successful == null ){
 				// Timeout before receiving all votes. Send out abort
@@ -152,6 +162,9 @@ public class TransactionManager {
 			}
 			System.out.println("TM:: sending decision: " + successful);
 			this.logger.log(txnID+","+successful);
+			
+			if (crashPoint == 5) mw.selfDestruct();
+			
 			for (RM rm : rms) {
 				switch (rm){
 				case CAR:
@@ -167,6 +180,7 @@ public class TransactionManager {
 					mw.decisionPhase(txnID, successful);
 					break;
 				}
+				if (crashPoint == 6) mw.selfDestruct();
 			}
 			//Remove rm's from activeRM 
 			int index = activeTransactions.indexOf(txnID);
@@ -174,6 +188,7 @@ public class TransactionManager {
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+		if (crashPoint == 7) mw.selfDestruct();
 		return successful;
 	}   
 
@@ -238,6 +253,10 @@ public class TransactionManager {
 			return null;
 		});
 		activeRMs.remove(txnID, null);
+	}
+	
+	public void setCrashPoint(int crashPoint) {
+		this.crashPoint = crashPoint;
 	}
 
 	// Tell us the txn is alive
