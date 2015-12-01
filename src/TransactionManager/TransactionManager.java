@@ -6,10 +6,12 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.StringTokenizer;
 import java.util.Vector;
@@ -62,7 +64,97 @@ public class TransactionManager {
 		
 		this.logger = new Logger2PC(Type.coordinator);
 		
-		recover();
+		recover2();
+	}
+	
+	// fixed infinite loop
+	private void recover2(){
+		Path logPath = null;
+		try {
+			logPath = Paths.get("coordinator/log.txt");
+		} catch (InvalidPathException e) {
+			e.printStackTrace();
+		}
+		try {
+			List<String> allLines = Files.readAllLines(logPath);
+			int n = allLines.size();
+			for (int i = 0; i < n; i++) {
+				String line = allLines.get(i);
+				String[] split = line.split(",");
+				int txn = Integer.parseInt(split[0]);
+				System.out.println("Log finds start of txn " + txn);
+
+				switch(split.length){
+				case 1:
+					String nextLine = i<n ? allLines.get(i+1) : "";
+					String[] nextSplit = nextLine.split(",");
+					switch(nextSplit.length){
+					case 2:
+						// Resend decision
+						int txn2 = Integer.parseInt(nextSplit[0]);
+						if (txn2 != txn) System.out.println("Transaction logging out of order! What!");
+						boolean decision = Boolean.parseBoolean(nextSplit[1]);
+						tryDecisionPhase(mw, txn, decision);
+						tryDecisionPhase(proxyFlight, txn, decision);
+						tryDecisionPhase(proxyCar, txn, decision);
+						tryDecisionPhase(proxyRoom, txn, decision);
+						break;
+					default:
+						// Transaction with undecided outcome
+						// Finish the 2PC for this transaction by sending abort 
+						System.out.println("Detect unfinished 2PC protocol. Sending abort of txn " + txn);
+						tryAbort(mw, txn);
+						tryAbort(proxyFlight, txn);
+						tryAbort(proxyCar, txn);
+						tryAbort(proxyRoom, txn);
+						if (nextLine.isEmpty()) return;
+						break;
+					}
+					break;
+				case 2:
+					boolean decision = Boolean.parseBoolean(split[1]);
+					tryDecisionPhase(mw, txn, decision);
+					tryDecisionPhase(proxyFlight, txn, decision);
+					tryDecisionPhase(proxyCar, txn, decision);
+					tryDecisionPhase(proxyRoom, txn, decision);
+					break;
+				default:
+					throw new IllegalStateException("There is more than 2 values in the log entry");
+				}
+			}
+			
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void tryAbort(ResourceManager rm, int txn){
+		try {
+			rm.abort(txn);
+		} catch (Exception e) {
+			// May receive invalid/aborted exception since it might have timed out at RM's
+		}
+	}
+	private void tryAbort(MiddlewareImpl mw, int txn){
+		try {
+			mw.abort(txn);
+		} catch (Exception e) {
+			// May receive invalid/aborted exception since it might have timed out at RM's
+		}
+	}	
+	private void tryDecisionPhase(ResourceManager rm, int txn, boolean decision){
+		try {
+			rm.decisionPhase(txn, decision);
+		} catch (Exception e) {
+			// May receive invalid/aborted exception since it might have timed out at RM's
+		}
+	}
+	private void tryDecisionPhase(MiddlewareImpl mw, int txn, boolean decision){
+		try {
+			mw.decisionPhase(txn, decision);
+		} catch (Exception e) {
+			// May receive invalid/aborted exception since it might have timed out at RM's
+		}
 	}
 	
 	private void recover() {
@@ -78,7 +170,7 @@ public class TransactionManager {
 			StringTokenizer tokens;
 			line = br.readLine();
 			while (line != null) {
-				System.out.println("Read: " + line);
+				System.out.println("Coordinator read: " + line);
 				tokens = new StringTokenizer(line, ",");
 				if (tokens.countTokens() == 1) {
 					int txn = Integer.parseInt(tokens.nextToken());
@@ -115,6 +207,7 @@ public class TransactionManager {
 						if (line == null) return;
 					}
 					else if (tokens.countTokens() == 2) {
+						System.out.println("2 tokens");
 						// Coordinator has either sent decision to all resource managers, to some, or none
 						// Resend decision
 						int txn2 = Integer.parseInt(tokens.nextToken());
@@ -142,6 +235,7 @@ public class TransactionManager {
 						}
 						// Read next line for next iteration
 						line = br.readLine();
+						System.out.println("Next line :"+line);
 					}
 				}
 			}
