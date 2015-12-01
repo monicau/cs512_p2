@@ -912,19 +912,20 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	public boolean decisionPhase(int transactionId, boolean commit) {
 		System.out.println("RM:: Received decision for " + transactionId + ": " + commit);
 		if (crashPoint == 10) selfDestruct();
-		
-		if(commit){
-			shadower.actualCommit();
+		if (timer.isActive(transactionId)) {
+			if(commit){
+				shadower.actualCommit();
+				timer.setState(transactionId, TransactionTimer.State.Committed);
+			}
+			else{
+				this.abort(transactionId);
+				timer.setState(transactionId, TransactionTimer.State.Aborted);
+			}
+			txnHistory.remove(transactionId);
+			// log the event
+			this.logger.log(transactionId+", ,"+commit);
+			this.unlock(transactionId);
 		}
-		else{
-			this.abort(transactionId);
-		}
-
-		txnHistory.remove(transactionId);
-
-		// log the event
-		this.logger.log(transactionId+", ,"+commit);
-		this.unlock(transactionId);
 		return true;
 	}
 

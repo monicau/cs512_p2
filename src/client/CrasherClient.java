@@ -52,7 +52,7 @@ public class CrasherClient extends WSClient {
 				print("Reserving car...");
 				proxy.reserveCar(id, customer, "car2");
 				print("Reserving room...");
-				proxy.reserveFlight(id, customer, "room2");
+				proxy.reserveRoom(id, customer, "room2");
 
 				boolean r = proxy.commit(id);
 				print("Commit result: " + r);
@@ -87,7 +87,7 @@ public class CrasherClient extends WSClient {
 				print("Reserving car...");
 				proxy.reserveCar(id, customer, "car3");
 				print("Reserving room...");
-				proxy.reserveFlight(id, customer, "room3");
+				proxy.reserveRoom(id, customer, "room3");
 
 				print("Committing transaction...");
 				boolean r = proxy.commit(id);
@@ -117,7 +117,7 @@ public class CrasherClient extends WSClient {
 				print("Reserving car...");
 				proxy.reserveCar(id, customer, "car4");
 				print("Reserving room...");
-				proxy.reserveFlight(id, customer, "room4");
+				proxy.reserveRoom(id, customer, "room4");
 
 				print("Committing transaction...");
 				boolean r = proxy.commit(id);
@@ -147,7 +147,7 @@ public class CrasherClient extends WSClient {
 				print("Reserving car...");
 				proxy.reserveCar(id, customer, "car5");
 				print("Reserving room...");
-				proxy.reserveFlight(id, customer, "room5");
+				proxy.reserveRoom(id, customer, "room5");
 
 				print("Committing transaction...");
 				boolean r = proxy.commit(id);
@@ -177,7 +177,7 @@ public class CrasherClient extends WSClient {
 				print("Reserving car...");
 				proxy.reserveCar(id, customer, "car6");
 				print("Reserving room...");
-				proxy.reserveFlight(id, customer, "room6");
+				proxy.reserveRoom(id, customer, "room6");
 
 				print("Committing transaction...");
 				boolean r = proxy.commit(id);
@@ -207,7 +207,7 @@ public class CrasherClient extends WSClient {
 				print("Reserving car...");
 				proxy.reserveCar(id, customer, "car7");
 				print("Reserving room...");
-				proxy.reserveFlight(id, customer, "room7");
+				proxy.reserveRoom(id, customer, "room7");
 
 				print("Committing transaction...");
 				boolean r = proxy.commit(id);

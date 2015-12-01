@@ -76,7 +76,8 @@ public class TransactionManager {
 			
 			String line = null;
 			StringTokenizer tokens;
-			while ((line = br.readLine()) != null) {
+			line = br.readLine();
+			while (line != null) {
 				System.out.println("Read: " + line);
 				tokens = new StringTokenizer(line, ",");
 				if (tokens.countTokens() == 1) {
@@ -112,7 +113,7 @@ public class TransactionManager {
 						}
 						
 						if (line == null) return;
-					} 
+					}
 					else if (tokens.countTokens() == 2) {
 						// Coordinator has either sent decision to all resource managers, to some, or none
 						// Resend decision
@@ -139,9 +140,10 @@ public class TransactionManager {
 						} catch (Exception e) {
 							// May receive invalid/aborted exception since it might have timed out at RM's
 						}
-
+						// Read next line for next iteration
+						line = br.readLine();
 					}
-				} 
+				}
 			}
 		} catch (IOException e) {
 			System.out.println("Log file does not exist.  No coordinator recovery needed.");
@@ -285,7 +287,7 @@ public class TransactionManager {
 			}
 			//Remove rm's from activeRM 
 			int index = activeTransactions.indexOf(txnID);
-			activeTransactions.removeElementAt(index);
+			if (index != -1) activeTransactions.removeElementAt(index);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -328,7 +330,7 @@ public class TransactionManager {
 		//Remove rm's from activeRM 
 		delist(txnID);
 		int index = activeTransactions.indexOf(txnID);
-		activeTransactions.removeElementAt(index);
+		if (index != -1) activeTransactions.removeElementAt(index);
 		return success;  
 	}
 
