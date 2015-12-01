@@ -1168,18 +1168,23 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean decisionPhase(int transactionId, boolean commit) {
 		// log the event
-		if(commit){
-			shadower.actualCommit();
-		}
-		else{
-			try {
-				this.abort(transactionId);
-			} catch (InvalidTransactionException e) {
-				e.printStackTrace();
+		System.out.println("RM:: Received decision for " + transactionId + ": " + commit);
+		if (timer.isActive(transactionId)) {
+			if(commit){
+				shadower.actualCommit();
 			}
+			else{
+				try {
+					this.abort(transactionId);
+				} catch (InvalidTransactionException e) {
+					e.printStackTrace();
+				}
+			}
+			this.logger.log(transactionId+", ,"+commit);
+			this.unlock(transactionId);
+		} else {
+			System.out.println("MW:: received decision phase for txn " + transactionId + " but this txn is inactive. Ignoring.");
 		}
-		this.logger.log(transactionId+", ,"+commit);
-		this.unlock(transactionId);
 		return true;
 	}
 	

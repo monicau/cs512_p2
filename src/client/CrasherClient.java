@@ -104,9 +104,23 @@ public class CrasherClient extends WSClient {
 				proxy.crashPoint("mw", 1);
 				int id = proxy.start();
 				print("Started new transaction: " + id);
+				int customer = proxy.newCustomer(id);
+				print("Created new customer " + customer);
 				print("Running newFlight(" + id +",2,2,2)");
 				proxy.addFlight(id,2,2,2);
+				print("Running newCar(" + id +",car2,2,2)");
+				proxy.addCars(id,"car2",2,2);
+				print("Running newRoom(" + id +",room2,2,2)");
+				proxy.addRooms(id,"room2",2,2);
 				print("Committing transaction...");
+
+				print("Reserving flight...");
+				proxy.reserveFlight(id, customer, 2);
+				print("Reserving car...");
+				proxy.reserveCar(id, customer, "car2");
+				print("Reserving room...");
+				proxy.reserveRoom(id, customer, "room2");
+
 				boolean r = proxy.commit(id);
 				print("Commit result: " + r);
 			} catch (Exception e) {
@@ -117,37 +131,189 @@ public class CrasherClient extends WSClient {
 		print("\t Crash coordinator after sending vote request and before receiving any replies");
 		if (userSaidYes(stdin)) {
 			proxy.crashPoint("mw", 2);
+			// TODO
 		}
 		print("Do test 3? (Y/n)");
 		print("\t Crash coordinator after receiving some replies but not all");
 		if (userSaidYes(stdin)) {
-			proxy.crashPoint("mw", 3);
+			try {
+				proxy.crashPoint("mw", 3);
+				int id = proxy.start();
+				print("Started new transaction: " + id);
+				int customer = proxy.newCustomer(id);
+				print("Created new customer " + customer);
+				print("Running newFlight(" + id +",3,3,3)");
+				proxy.addFlight(id,3,3,3);
+				print("Running newCar(" + id +",car3,3,3)");
+				proxy.addCars(id,"car3",3,3);
+				print("Running newRoom(" + id +",room3,3,3)");
+				proxy.addRooms(id,"room3",3,3);
+
+				print("Reserving flight...");
+				proxy.reserveFlight(id, customer, 3);
+				print("Reserving car...");
+				proxy.reserveCar(id, customer, "car3");
+				print("Reserving room...");
+				proxy.reserveRoom(id, customer, "room3");
+
+				print("Committing transaction...");
+				boolean r = proxy.commit(id);
+				print("Commit result: " + r);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		print("Do test 4? (Y/n)");
 		print("\t Crash coordinator after receiving all replies but before deciding");
 		if (userSaidYes(stdin)) {
-			proxy.crashPoint("mw", 4);
+			try {
+				proxy.crashPoint("mw", 4);
+				int id = proxy.start();
+				print("Started new transaction: " + id);
+				int customer = proxy.newCustomer(id);
+				print("Created new customer " + customer);
+				print("Running newFlight(" + id +",4,4,4)");
+				proxy.addFlight(id,4,4,4);
+				print("Running newCar(" + id +",car4,4,4)");
+				proxy.addCars(id,"car4",4,4);
+				print("Running newRoom(" + id +",room4,4,4)");
+				proxy.addRooms(id,"room4",4,4);
+
+				print("Reserving flight...");
+				proxy.reserveFlight(id, customer, 4);
+				print("Reserving car...");
+				proxy.reserveCar(id, customer, "car4");
+				print("Reserving room...");
+				proxy.reserveRoom(id, customer, "room4");
+
+				print("Committing transaction...");
+				boolean r = proxy.commit(id);
+				print("Commit result: " + r);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		print("Do test 5? (Y/n)");
 		print("\t Crash coordinator after deciding but before sending decision");
 		if (userSaidYes(stdin)) {
-			proxy.crashPoint("mw", 5);
+			try {
+				proxy.crashPoint("mw", 5);
+				int id = proxy.start();
+				print("Started new transaction: " + id);
+				int customer = proxy.newCustomer(id);
+				print("Created new customer " + customer);
+				print("Running newFlight(" + id +",5,5,5)");
+				proxy.addFlight(id,5,5,5);
+				print("Running newCar(" + id +",car5,5,5)");
+				proxy.addCars(id,"car5",5,5);
+				print("Running newRoom(" + id +",room5,5,5)");
+				proxy.addRooms(id,"room5",5,5);
+
+				print("Reserving flight...");
+				proxy.reserveFlight(id, customer, 5);
+				print("Reserving car...");
+				proxy.reserveCar(id, customer, "car5");
+				print("Reserving room...");
+				proxy.reserveRoom(id, customer, "room5");
+
+				print("Committing transaction...");
+				boolean r = proxy.commit(id);
+				print("Commit result: " + r);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		print("Do test 6? (Y/n)");
 		print("\t Crash coordinator after sending some but not all decisions");
 		if (userSaidYes(stdin)) {
-			proxy.crashPoint("mw", 6);
+			try {
+				proxy.crashPoint("mw", 6);
+				int id = proxy.start();
+				print("Started new transaction: " + id);
+				int customer = proxy.newCustomer(id);
+				print("Created new customer " + customer);
+				print("Running newFlight(" + id +",6,6,6)");
+				proxy.addFlight(id,6,6,6);
+				print("Running newCar(" + id +",car6,6,6)");
+				proxy.addCars(id,"car6",6,6);
+				print("Running newRoom(" + id +",room6,6,6)");
+				proxy.addRooms(id,"room6",6,6);
+
+				print("Reserving flight...");
+				proxy.reserveFlight(id, customer, 6);
+				print("Reserving car...");
+				proxy.reserveCar(id, customer, "car6");
+				print("Reserving room...");
+				proxy.reserveRoom(id, customer, "room6");
+
+				print("Committing transaction...");
+				boolean r = proxy.commit(id);
+				print("Commit result: " + r);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		print("Do test 7? (Y/n)");
 		print("\t Crash coordinator after having sent all decisions");
 		if (userSaidYes(stdin)) {
-			proxy.crashPoint("mw", 7);
+			try {
+				proxy.crashPoint("mw", 7);
+				int id = proxy.start();
+				print("Started new transaction: " + id);
+				int customer = proxy.newCustomer(id);
+				print("Created new customer " + customer);
+				print("Running newFlight(" + id +",7,7,7)");
+				proxy.addFlight(id,7,7,7);
+				print("Running newCar(" + id +",car7,7,7)");
+				proxy.addCars(id,"car7",7,7);
+				print("Running newRoom(" + id +",room7,7,7)");
+				proxy.addRooms(id,"room7",7,7);
+
+				print("Reserving flight...");
+				proxy.reserveFlight(id, customer, 7);
+				print("Reserving car...");
+				proxy.reserveCar(id, customer, "car7");
+				print("Reserving room...");
+				proxy.reserveRoom(id, customer, "room7");
+
+				print("Committing transaction...");
+				boolean r = proxy.commit(id);
+				print("Commit result: " + r);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		print("Do test 8? (Y/n)");
 		print("\t Crash RM after receiving vote request but before sending answer");
 		if (userSaidYes(stdin)) {
 			String targetServer = getTarget(stdin);
-			proxy.crashPoint(targetServer, 8);
+			try {
+				proxy.crashPoint(targetServer, 8);
+				int id = proxy.start();
+				print("Started new transaction: " + id);
+				int customer;
+				if (targetServer.equals("mw")) {
+					customer = proxy.newCustomer(id);
+					print("Created new customer " + customer);
+				}
+				else if (targetServer.equals("flight")) {
+					print("Running newFlight(" + id +",7,7,7)");
+					proxy.addFlight(id,7,7,7);
+				}
+				else if (targetServer.equals("car")) {
+					print("Running newCar(" + id +",car7,7,7)");
+					proxy.addCars(id,"car7",7,7);
+				}
+				else if (targetServer.equals("room")) {
+					print("Running newRoom(" + id +",room7,7,7)");
+					proxy.addRooms(id,"room7",7,7);
+				}
+				print("Committing transaction...");
+				boolean r = proxy.commit(id);
+				print("Commit result: " + r);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		print("Do test 9? (Y/n)");
 		print("\t Crash RM after sending answer");

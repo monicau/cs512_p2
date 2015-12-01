@@ -69,6 +69,8 @@ public class Shadower {
 						committedVersion = version.B;
 						workingVersion = version.A;
 					}
+					System.out.println("S:: Recovery.. working version is now " + workingVersion);
+					System.out.println("S:: Recovery.. committed version is now " + committedVersion);
 					return data;
 				} else {
 					return null;
@@ -134,7 +136,8 @@ public class Shadower {
 	
 	// update the master to point to the current working data file
 	public void actualCommit() {
-		System.out.println("S:: Doing actual commit... ");
+		System.out.println("S:: Actual commit called ... ");
+		
 		if (workingVersion == version.A) {
 			workingVersion = version.B;
 			committedVersion = version.A;
@@ -142,8 +145,12 @@ public class Shadower {
 			workingVersion = version.A;
 			committedVersion = version.B;
 		}
+		System.out.println("S:: working version is now " + workingVersion);
+		System.out.println("S:: committed version is now " + committedVersion);
+		
 		// Point master record to the new committed version
 		try (BufferedWriter writer = Files.newBufferedWriter(Paths.get(name+"/master"))) {
+			System.out.println("S:: writing version " + committedVersion + " to " + name +" /master");
 			writer.write(""+committedVersion);
 		} catch (IOException e) {
 			System.out.println("S:: Fail to write to master record");

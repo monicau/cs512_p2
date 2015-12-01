@@ -67,9 +67,19 @@ public class TransactionTimer {
 	public void kill(){
 		thread.interrupt();
 	}
+
+	public boolean isActive(int id) {
+		// Tells us if transaction is active or not
+		return transactions.get(id).state == State.Active;
+	}
 	
 	public boolean isAborted(int id) {
 		// Tells us if transaction is aborted or not
 		return transactions.get(id).state == State.Aborted;
+	}
+	
+	public void setState(int id, State type) {
+		// Set transaction to be committed so sweeper stops tracking it
+		transactions.get(id).state = type;
 	}
 }
