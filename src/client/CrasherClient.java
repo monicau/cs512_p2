@@ -43,13 +43,13 @@ public class CrasherClient extends WSClient {
 		System.out.println("Crash point has been set");
 		System.out.println("Starting automated transaction ");
 		try {
-			automatedTransaction(target);
+			automatedTransaction(crashCase, target);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
 	
-	private void automatedTransaction(String target) throws Exception{
+	private void automatedTransaction(int crashCase, String target) throws Exception{
 		int id = proxy.start();
 		String command = 
 				target.equals("flight") ? "newFlight":
@@ -57,24 +57,41 @@ public class CrasherClient extends WSClient {
 				target.equals("room") ? "newRoom":
 				target.equals("mw") ? "mw" : ""; // Dunno what to put for mw
 		Random random = new Random();
-		int r1 = Math.abs(random.nextInt());
-		int r2 = Math.abs(random.nextInt());
-		int r3 = Math.abs(random.nextInt());
+		int r1 = crashCase;
+		int r2 = crashCase;
+		int r3 = crashCase;
 		print("Started new transaction: " + id);
-		print("Running "+command+"(" + id +","+r1+","+r2+","+r3+")");
 		switch(command){
 			case "newFlight":
+				print("Running "+command+"(" + id +","+r1+","+r2+","+r3+")");
 				proxy.addFlight(id, r1,r2,r3);
 				break;
 			case "newCar":
+				print("Running "+command+"(" + id +","+r1+","+r2+","+r3+")");
 				proxy.addCars(id, ""+r1,r2,r3);
 				break;
 			case "newRoom":
+				print("Running "+command+"(" + id +","+r1+","+r2+","+r3+")");
 				proxy.addRooms(id, ""+r1,r2,r3);
 				break;
 			case "mw":
 				// use flight rm
-				proxy.addFlight(id, r1,r2,r3);
+				print("Started new transaction: " + id);
+				int customer = proxy.newCustomer(id);
+				print("Created new customer " + customer);
+				print("Running newFlight(" + id +","+r1+","+r2+","+r3+")");
+				proxy.addFlight(id,2,2,2);
+				print("Running newCar(" + id +",car"+r1+","+r2+","+r3+")");
+				proxy.addCars(id,"car2",2,2);
+				print("Running newRoom(" + id +",room"+r1+","+r2+","+r3+")");
+				proxy.addRooms(id,"room2",2,2);
+
+				print("Reserving flight...");
+				proxy.reserveFlight(id, customer, 2);
+				print("Reserving car...");
+				proxy.reserveCar(id, customer, "car2");
+				print("Reserving room...");
+				proxy.reserveRoom(id, customer, "room2");
 				break;
 			default:	
 				throw new IllegalStateException("Command ,"+command+", is not a valid command");
