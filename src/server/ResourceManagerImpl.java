@@ -903,8 +903,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		boolean answer = true;
 		this.logger.log(transactionId+","+answer);
 		
-		if (crashPoint == 8) System.exit(0);
-		if (crashPoint == 9) selfDestructIn(5000);
+		if (crashPoint == 8) selfDestruct();
+		else if (crashPoint == 9) selfDestructIn(5000);
 		
 		return answer;
 	}
@@ -935,6 +935,5 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	public void setCrashPoint(int crashPoint) {
 		System.out.println("RM:: setting crash point to " + crashPoint);
 		this.crashPoint = crashPoint;
-		
 	}
 }

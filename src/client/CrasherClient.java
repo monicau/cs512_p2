@@ -4,6 +4,9 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.MalformedURLException;
+import java.util.Random;
+
+import com.sun.xml.ws.api.streaming.XMLStreamReaderFactory.Default;
 
 public class CrasherClient extends WSClient {
 
@@ -23,11 +26,75 @@ public class CrasherClient extends WSClient {
 	
 	        CrasherClient client = new CrasherClient(serviceName, serviceHost, servicePort);
 	
-	        client.run();
+//	        client.run();
+	        client.runNum();
         } catch(Exception e) {
             e.printStackTrace();
         }
 	}
+	
+	private void runNum(){
+		BufferedReader in = new BufferedReader(new InputStreamReader(System.in));
+		System.out.println("Which test do you want to run? (1-10)");
+		String read = readIn(in);
+		int crashCase = Integer.parseInt(read);
+		String target = (crashCase <= 7) ? "mw" : getTarget(in);
+		proxy.crashPoint(target, crashCase);
+		System.out.println("Crash point has been set");
+		System.out.println("Starting automated transaction ");
+		try {
+			automatedTransaction(target);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private void automatedTransaction(String target) throws Exception{
+		int id = proxy.start();
+		String command = 
+				target.equals("flight") ? "newFlight":
+				target.equals("car") ? "newCar":
+				target.equals("room") ? "newRoom":
+				target.equals("mw") ? "mw" : ""; // Dunno what to put for mw
+		Random random = new Random();
+		int r1 = Math.abs(random.nextInt());
+		int r2 = Math.abs(random.nextInt());
+		int r3 = Math.abs(random.nextInt());
+		print("Started new transaction: " + id);
+		print("Running "+command+"(" + id +","+r1+","+r2+","+r3+")");
+		switch(command){
+			case "newFlight":
+				proxy.addFlight(id, r1,r2,r3);
+				break;
+			case "newCar":
+				proxy.addCars(id, ""+r1,r2,r3);
+				break;
+			case "newRoom":
+				proxy.addRooms(id, ""+r1,r2,r3);
+				break;
+			case "mw":
+				// use flight rm
+				proxy.addFlight(id, r1,r2,r3);
+				break;
+			default:	
+				throw new IllegalStateException("Command ,"+command+", is not a valid command");
+		}
+		print("Committing transaction...");
+		boolean result = proxy.commit(id);
+		print("Result: "+result);
+	}
+	
+	private String readIn(BufferedReader in) {
+		String buffer = "";
+		try{
+			buffer = in.readLine();
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+		return buffer;
+	}
+	
 	private void run() {
 		BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
 		print("Do test 1? (Y/n)");
