@@ -11,9 +11,9 @@ public class Main {
     public static void main(String[] args) 
     throws Exception {
     
-        if (args.length != 7 && args.length != 13) {
+        if (args.length != 9 && args.length != 13) {
             System.out.println(
-                "Usage: java Main <use_services> <middleware ip> <service-name> <service-port> <deploy-dir> [<rm1-host> <rm1-port> <rm2-host> <rm2-port> <rm3-host> <rm3-port>] <service-type> <rm-type>");
+                "Usage: java Main <use_services> <middleware ip> <service-name> <service-port> <deploy-dir> [<rm1-host> <rm1-port> <rm2-host> <rm2-port> <rm3-host> <rm3-port>] <service-type> <rm-type> <mw-name> <mw-port>");
             System.exit(-1);
         }
         
@@ -78,6 +78,13 @@ public class Main {
         	String rmType = args[6];
         	writer = new PrintWriter(rmType+".txt", "UTF-8");
         	writer.println(port);
+        	writer.close();
+        	
+        	String mwHost = args[7];
+        	String mwPort = args[8];
+        	writer = new PrintWriter("customer.txt", "UTF-8");
+        	writer.println(mwHost);
+        	writer.println(mwPort);
         	writer.close();
         }
         

@@ -70,7 +70,9 @@ public class TransactionTimer {
 
 	public boolean isActive(int id) {
 		// Tells us if transaction is active or not
-		return transactions.get(id).state == State.Active;
+		Txn t = transactions.get(id);
+		if (t!=null) return t.state == State.Active;
+		return false;
 	}
 	
 	public boolean isAborted(int id) {

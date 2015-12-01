@@ -95,7 +95,7 @@
                 destdir="${basedir}/build/classes"
                 srcdir="${basedir}/src"
                 includes="server/**"
-                excludes="server/MiddlewareImpl*,server/TransactionManager*"
+                excludes="server/MiddlewareImpl.java,server/TransactionManager*"
                 sourceDestDir="${basedir}/build/classes"
                 procOnly="false"
                 sourcepath="${basedir}/src">
@@ -189,6 +189,8 @@
             <arg value="${basedir}/webapps"/>
             <arg value="${service.type}"/>
             <arg value="flight" />
+            <arg value="${service.host}" />
+            <arg value="${service.port}" />
         </java>
     </target>
     
@@ -207,6 +209,8 @@
             <arg value="${basedir}/webapps"/>
             <arg value="${service.type}"/>
             <arg value="car" />
+            <arg value="${service.host}" />
+            <arg value="${service.port}" />
         </java>
     </target>
     
@@ -225,6 +229,8 @@
             <arg value="${basedir}/webapps"/>
             <arg value="${service.type}"/>
             <arg value="room" />
+            <arg value="${service.host}" />
+            <arg value="${service.port}" />
         </java>
     </target>
 	

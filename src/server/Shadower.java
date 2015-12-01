@@ -12,8 +12,11 @@ import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.List;
+import java.util.StringTokenizer;
 
 /**
  * 
@@ -46,6 +49,50 @@ public class Shadower {
 	
 	// Returns data if master record exists
 	public RMMap recover() {
+		// Check if log exists.  This would affect which version file to recover from
+		Path logPath = null;
+		try {
+			logPath = Paths.get(name + "/log.txt");
+		} catch (InvalidPathException e) {
+			e.printStackTrace();
+		}
+		try {
+			List<String> allLines = Files.readAllLines(logPath);
+			int n = allLines.size();
+			for (int i = 0; i < n; i++) {
+				String line = allLines.get(i);
+				String[] split = line.split(",");
+				int txn = Integer.parseInt(split[0]);
+				System.out.println("S:: Log finds start of txn " + txn);
+
+				switch(split.length){
+				case 2:
+					// RM replied but did not receive decision
+					// If its vote was yes, check if we received decision
+					if (!Boolean.parseBoolean(split[1])) {
+						int id = Integer.parseInt(split[0]);
+						// Check next line to see if it received decision
+						if (i+1 < n) {
+							String nextLine = allLines.get(i+1);
+							String[] splitNextLine = nextLine.split(",");
+							int nextId = Integer.parseInt(splitNextLine[0]);
+							if (nextId != id) {
+								// TODO: ask coordinator about decision for this txn
+								
+							}
+						}
+					}
+					break;
+				case 3:
+					// RM replied and received decision. Do nothing.
+					break;
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+		
 		// Check if master record exists
 		try {
 			// Try to read from master record

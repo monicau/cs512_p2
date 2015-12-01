@@ -53,8 +53,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	private Shadower shadower;
 	private String type;
 	private int crashPoint;
-//	ResourceManager proxyMW;
-//	ResourceManagerImplService service;
+	ResourceManager proxyCustomer;
+	ResourceManagerImplService service;
 	
 	private TransactionTimer timer;
 	
@@ -79,13 +79,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			try {
 				String line = reader.readLine();
 				reader.close();
-				reader = new BufferedReader(new FileReader(new File("config.txt")));
+				reader = new BufferedReader(new FileReader(new File("customer.txt")));
 				MW_LOCATION = reader.readLine();
 				MW_PORT = Integer.parseInt(reader.readLine());
 				
-//				URL wsdlLocation = new URL("http", MW_LOCATION, MW_PORT, "/" + "mw" + "/mw?wsdl");
-//				service = new ResourceManagerImplService(wsdlLocation);
-//				proxyMW = service.getResourceManagerImplPort();
+				URL wsdlLocation = new URL("http", MW_LOCATION, MW_PORT, "/" + "rm" + "/rm?wsdl");
+				service = new ResourceManagerImplService(wsdlLocation);
+				proxyCustomer = service.getResourceManagerImplPort();
 				if (line.equals("ws")) {
 					useWebService = true;
 				} else {
