@@ -44,14 +44,12 @@ import com.google.gson.Gson;
 @WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {
 	private String MW_LOCATION = "localhost";
-	private int MW_PORT;
 	private RMMap<Integer, Vector<ItemHistory>> txnHistory;
 	private LockManager lm;
 	private Shadower shadower;
 	private String type;
 	private int crashPoint;
-//	ResourceManager proxyCustomer;
-//	ResourceManagerImplService service;
+	private boolean voteAnswer;
 	
 	private TransactionTimer timer;
 	
@@ -68,6 +66,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		this.timer = new TransactionTimer(60000, this::abort);
 		this.timer.start();
 		this.crashPoint = -1;
+		this.voteAnswer = true;
 		txnHistory = new RMMap<Integer, Vector<ItemHistory>>();
 		// Determine if we are using web services or tcp
 		try {
@@ -898,18 +897,16 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			throw new TransactionAbortedException("Transaction aborted " + transactionId);
 		}
 		
-		
 		// Write the data to a version file
 		shadower.prepareCommit(m_itemHT);
 		
 		// log the event
-		boolean answer = true;
-		this.logger.log(transactionId+","+answer);
+		this.logger.log(transactionId+"," + voteAnswer);
 		
 		if (crashPoint == 8) selfDestruct();
 		else if (crashPoint == 9) selfDestructIn(2000); // Allow time to send answer before crashing
 		
-		return answer;
+		return voteAnswer;
 	}
 
 	@Override
@@ -947,5 +944,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	public void setCrashPoint(int crashPoint) {
 		System.out.println("RM:: setting crash point to " + crashPoint);
 		this.crashPoint = crashPoint;
+	}
+
+	@Override
+	public void setVote(String target, boolean vote) {
+		if (target.equals(type)) {
+			System.out.println("RM:: Setting default vote to: " + vote);
+			this.voteAnswer = vote;
+		}
 	}
 }

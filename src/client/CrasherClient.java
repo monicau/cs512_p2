@@ -41,12 +41,36 @@ public class CrasherClient extends WSClient {
 		String target = (crashCase <= 7) ? "mw" : getTarget(in);
 		proxy.crashPoint(target, crashCase);
 		System.out.println("Crash point has been set");
+		System.out.println("Set vote answers? Default votes are yesses.  (y/n)");
+		handleVote(in);
 		System.out.println("Starting automated transaction ");
 		try {
 			automatedTransaction(crashCase, target);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+	
+	private void handleVote(BufferedReader in) {
+		String read = readIn(in);
+		if (read.toLowerCase().equals("n")) return;
+		System.out.println("Set flight's vote answer: (true/false)");
+		read = readIn(in);
+		boolean answer = Boolean.parseBoolean(read);
+		proxy.setVote("flight", answer);
+		System.out.println("Set car's vote answer: (true/false)");
+		read = readIn(in);
+		answer = Boolean.parseBoolean(read);
+		proxy.setVote("car", answer);
+		System.out.println("Set room's vote answer: (true/false)");
+		read = readIn(in);
+		answer = Boolean.parseBoolean(read);
+		proxy.setVote("room", answer);
+		System.out.println("Set customer's vote answer: (true/false)");
+		read = readIn(in);
+		answer = Boolean.parseBoolean(read);
+		proxy.setVote("mw", answer);
+		return;
 	}
 	
 	private void automatedTransaction(int crashCase, String target) throws Exception{

@@ -194,6 +194,10 @@ public interface ResourceManager {
     @WebMethod
     public void setCrashPoint(int crashPoint);
     
+    /* Set default vote answer */
+    @WebMethod
+    public void setVote(String target, boolean vote);
+    
     public void removeTxn(int txnID);
 	public boolean unlock(int txnID);                                                    
 	public RMItem readFromStorage(int id, String key);                        

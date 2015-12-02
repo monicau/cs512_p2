@@ -404,4 +404,10 @@ public class TCPClient extends TCPServiceRequest implements ResourceManager{
 		
 	}
 
+	@Override
+	public void setVote(String target, boolean vote) {
+		// TODO Auto-generated method stub
+		
+	}
+
 }

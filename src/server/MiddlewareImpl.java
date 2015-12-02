@@ -81,11 +81,13 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	private Logger2PC logger;
 	private TransactionTimer timer;
+	private boolean voteAnswer;
 	
 	public MiddlewareImpl(){
 		System.out.println("Starting middleware");
 		this.timer = new TransactionTimer(60000, this::abortCustomer);
 		this.timer.start();
+		this.voteAnswer = true;
 		lm = new LockManager();
 		txnHistory = new RMMap<Integer, Vector<ItemHistory>>();
 		shadower = new Shadower("mw"); 
@@ -1161,9 +1163,8 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		shadower.prepareCommit(m_itemHT);
 		
 		// log the event
-		boolean answer = true;
-		this.logger.log(transactionId+","+answer);
-		return answer;
+		this.logger.log(transactionId+","+voteAnswer);
+		return voteAnswer;
 	}
 
 	@Override
@@ -1364,6 +1365,20 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public String getType() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	@Override
+	public void setVote(String target, boolean vote) {
+		if (target.equals("mw")) {
+			System.out.println("MW:: Setting default vote to: " + vote);
+			this.voteAnswer = vote;
+		} else if (target.equals("flight")) {
+			proxyFlight.setVote(target, vote);
+		} else if (target.equals("car")) {
+			proxyCar.setVote(target, vote);
+		} else if (target.equals("room")) {
+			proxyRoom.setVote(target, vote);
+		}
 	}
 }
 

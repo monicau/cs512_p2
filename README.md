@@ -80,9 +80,11 @@ where location is one of the crash point numbers below
 
 10 - Crash RM after receiving decision but before committing/aborting
 
-###How to change RM's vote answer
+###How to change RM's vote answer in interactive client
 
-TODO
+```setVote,target,voteAnswer```
+
+where target is mw, flight, car or room and voteAnswer is true or false.
 
 --
 
