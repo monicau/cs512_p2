@@ -55,6 +55,7 @@ public class Shadower {
 		
 		try(BufferedReader reader = new BufferedReader(new FileReader(new File("config.txt")))) {
 			MW_LOCATION = reader.readLine();
+			System.out.println("Setting middleware host as: " + MW_LOCATION);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

@@ -9,11 +9,11 @@
 - Apache Ant
 
 ###Resource Managers
-```ant rm1 -Dservice.rm1.host=HOSTNAME -Dservice.rm1.port=PORT```
+```ant rm1 -Dservice.rm1.host=HOSTNAME -Dservice.rm1.port=PORT -Dmiddleware.ip=IP```
 
-```ant rm2 -Dservice.rm2.host=HOSTNAME -Dservice.rm2.port=PORT```
+```ant rm2 -Dservice.rm2.host=HOSTNAME -Dservice.rm2.port=PORT -Dmiddleware.ip=IP```
 
-```ant rm3 -Dservice.rm3.host=HOSTNAME -Dservice.rm3.port=PORT```
+```ant rm3 -Dservice.rm3.host=HOSTNAME -Dservice.rm3.port=PORT -Dmiddleware.ip=IP```
 
 By default without arguments, the hostname is localhost, the ports are 8088, 8089, 8090.
 
