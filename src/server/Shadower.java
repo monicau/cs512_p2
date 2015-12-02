@@ -64,6 +64,29 @@ public class Shadower {
 	
 	// Returns data if master record exists
 	public RMMap recover() {
+		// Set working and committed version files
+		File masterFile = new File(name+"/master");
+		if (!masterFile.exists()) {
+			// If master file doesn't exist, set working version as A
+			System.out.println("S:: master file does not exist.  Setting A as working version");
+			workingVersion = version.A;
+		} else {
+			try {
+				System.out.println("S:: trying to read from " + name + "/master");
+				String targetVersionFile = new String(Files.readAllBytes(Paths.get(name+"/master")));
+				if (targetVersionFile.contains("A")) {
+					System.out.println("S:: committed version = A, working version = B");
+					committedVersion = version.A;
+					workingVersion = version.B;
+				} else {
+					System.out.println("S:: committed version = B, working version = A");
+					committedVersion = version.B;
+					workingVersion = version.A;
+				}
+			} catch (IOException e) {
+			}
+		}
+		
 		// Check if log exists.  This would affect which version file to recover from
 		Path logPath = null;
 		try {
@@ -85,7 +108,6 @@ public class Shadower {
 				case 2:
 					// RM replied but did not receive decision
 					// If its vote was yes, check if we received decision
-					System.out.println("Found an incomplete txn");
 					if (Boolean.parseBoolean(split[1])) {
 						int id = Integer.parseInt(split[0]);
 						// Check next line to see if it received decision
@@ -94,7 +116,9 @@ public class Shadower {
 							String[] splitNextLine = nextLine.split(",");
 							int nextId = Integer.parseInt(splitNextLine[0]);
 							if (nextId != id) {
-								// TODO: ask coordinator about decision for this txn
+								System.out.println("Found an incomplete txn");
+								// Ask coordinator about decision for this txn
+								System.out.println("S:: Asking coordinator what the decision was.");
 								Socket coordinator = new Socket(MW_LOCATION, 9999);
 								PrintWriter writer = new PrintWriter(coordinator.getOutputStream());
 								writer.println(id);
@@ -111,6 +135,7 @@ public class Shadower {
 						}
 						else{
 							// if this is the last line then it was not completed, so try to complete transaction
+							System.out.println("S:: Asking coordinator what the decision was.");
 							Socket coordinator = new Socket(MW_LOCATION, 9999);
 							PrintWriter writer = new PrintWriter(coordinator.getOutputStream());
 							writer.println(id);
@@ -137,44 +162,33 @@ public class Shadower {
 		}
 		// the incomplete logs are no longer valid so delete them
 		try {
+			System.out.println("Deleting " + logPath.toString());
 			Files.deleteIfExists(logPath);
 		} catch (IOException e1) {
 			e1.printStackTrace();
 		}
-		// Check if master record exists
+		// Try to recover data from version file 
 		try {
-			// Try to read from master record
-			System.out.println("S:: trying to read from " + name + "/master");
-			String targetVersionFile = new String(Files.readAllBytes(Paths.get(name+"/master")));
-			System.out.println("S:: read this from master record: " + targetVersionFile);
 			RMMap data;
+			String targetVersionFile = committedVersion.toString();
 			try {
-				if (targetVersionFile.length() > 0) {
-					// Read the right version file
-					FileInputStream fileIn = new FileInputStream(name+"/"+targetVersionFile+".ser");
-					ObjectInputStream in = new ObjectInputStream(fileIn);
-					data = (RMMap) in.readObject();
-					in.close();
-					fileIn.close();
-					// Update our reference of which is the committed version
-					if (targetVersionFile.contains("A")) {
-						committedVersion = version.A;
-						workingVersion = version.B;
-					} else {
-						committedVersion = version.B;
-						workingVersion = version.A;
-					}
-					System.out.println("S:: Recovery.. working version is now " + workingVersion);
-					System.out.println("S:: Recovery.. committed version is now " + committedVersion);
-					return data;
-				} else {
-					return null;
-				}
+				// Read the right version file
+				System.out.println("Recovering from " + name+"/"+targetVersionFile+".ser");
+				FileInputStream fileIn = new FileInputStream(name+"/"+targetVersionFile+".ser");
+				ObjectInputStream in = new ObjectInputStream(fileIn);
+				data = (RMMap) in.readObject();
+				in.close();
+				fileIn.close();
+				System.out.println("S:: Recovery.. working version is now " + workingVersion);
+				System.out.println("S:: Recovery.. committed version is now " + committedVersion);
+				return data;
 			} catch (ClassNotFoundException e) {
 				System.out.println("S:: fail to read data");
 //				e.printStackTrace();
 			}
 		} catch (IOException e) {
+			System.out.println("S:: Fail to read master record.");
+		} catch (NullPointerException e) {
 			System.out.println("S:: Fail to read master record.");
 		}
 		return null;

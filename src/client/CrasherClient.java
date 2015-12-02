@@ -80,18 +80,18 @@ public class CrasherClient extends WSClient {
 				int customer = proxy.newCustomer(id);
 				print("Created new customer " + customer);
 				print("Running newFlight(" + id +","+r1+","+r2+","+r3+")");
-				proxy.addFlight(id,2,2,2);
+				proxy.addFlight(id,r1,r2,r3);
 				print("Running newCar(" + id +",car"+r1+","+r2+","+r3+")");
-				proxy.addCars(id,"car2",2,2);
+				proxy.addCars(id,"car"+r1,r2,r3);
 				print("Running newRoom(" + id +",room"+r1+","+r2+","+r3+")");
-				proxy.addRooms(id,"room2",2,2);
+				proxy.addRooms(id,"room"+r1,r2,r3);
 
 				print("Reserving flight...");
-				proxy.reserveFlight(id, customer, 2);
+				proxy.reserveFlight(id, customer, r1);
 				print("Reserving car...");
-				proxy.reserveCar(id, customer, "car2");
+				proxy.reserveCar(id, customer, "car"+r1);
 				print("Reserving room...");
-				proxy.reserveRoom(id, customer, "room2");
+				proxy.reserveRoom(id, customer, "room"+r2);
 				break;
 			default:	
 				throw new IllegalStateException("Command ,"+command+", is not a valid command");

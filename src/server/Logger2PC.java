@@ -27,14 +27,18 @@ public class Logger2PC {
 	
 	public void log(String msg){
 		File log = this.type.location.resolve("log.txt").toFile();
+		System.out.println("Logger: Logging to " + type + "/log.txt: " + msg);
 		try {
 			BufferedWriter br = new BufferedWriter(new FileWriter(log, true));
 			br.write(msg +"\n");
 			br.close();
+			System.out.println("Done logging.");
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			System.out.println("Logger: cannot find " + type + "/log.txt");
+//			e.printStackTrace();
 		} catch (IOException e) {
-			e.printStackTrace();
+			System.out.println("Logger: cannot find " + type + "/log.txt");
+//			e.printStackTrace();
 		}
 	}
 	

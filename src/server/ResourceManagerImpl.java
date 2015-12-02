@@ -907,7 +907,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		this.logger.log(transactionId+","+answer);
 		
 		if (crashPoint == 8) selfDestruct();
-		else if (crashPoint == 9) selfDestructIn(5000);
+		else if (crashPoint == 9) selfDestructIn(2000); // Allow time to send answer before crashing
 		
 		return answer;
 	}
@@ -915,6 +915,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	@Override
 	public boolean decisionPhase(int transactionId, boolean commit) {
 		System.out.println("RM:: Received decision for " + transactionId + ": " + commit);
+		if (crashPoint == 9) {
+			// Supposed to crash after sending answer but we're so fast we're still in self-destruct count down.  
+			// Prevent going further with 2PC by looping.
+			while(true);
+		}
 		if (crashPoint == 10) selfDestruct();
 		if (timer.isActive(transactionId)) {
 			if(commit){
