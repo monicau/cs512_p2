@@ -23,7 +23,7 @@ public class Main {
         int port = Integer.parseInt(args[3]);
         String deployDir = args[4];
         String serviceType;
-        if (args.length==7) {
+        if (args.length==9) {
         	serviceType = args[5];
         } else {
         	serviceType = args[11];
@@ -80,12 +80,12 @@ public class Main {
         	writer.println(port);
         	writer.close();
         	
-        	String mwHost = args[7];
-        	String mwPort = args[8];
-        	writer = new PrintWriter("customer.txt", "UTF-8");
-        	writer.println(mwHost);
-        	writer.println(mwPort);
-        	writer.close();
+//        	String mwHost = args[7];
+//        	String mwPort = args[8];
+//        	writer = new PrintWriter("customer.txt", "UTF-8");
+//        	writer.println(mwHost);
+//        	writer.println(mwPort);
+//        	writer.close();
         }
         
         tomcat.start();

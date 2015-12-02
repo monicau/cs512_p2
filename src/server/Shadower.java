@@ -54,7 +54,8 @@ public class Shadower {
 		try {
 			logPath = Paths.get(name + "/log.txt");
 		} catch (InvalidPathException e) {
-			e.printStackTrace();
+			System.out.println("S:: Cannot find " + name + "/log.txt");
+//			e.printStackTrace();
 		}
 		try {
 			List<String> allLines = Files.readAllLines(logPath);
@@ -89,7 +90,8 @@ public class Shadower {
 				}
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			System.out.println("S:: Cannot find " + name + "/log.txt");
+//			e.printStackTrace();
 		}
 		
 		
@@ -124,7 +126,7 @@ public class Shadower {
 				}
 			} catch (ClassNotFoundException e) {
 				System.out.println("S:: fail to read data");
-				e.printStackTrace();
+//				e.printStackTrace();
 			}
 		} catch (IOException e) {
 			System.out.println("S:: Fail to read master record.");
@@ -163,8 +165,10 @@ public class Shadower {
 			out.close();
 			
 		} catch (FileNotFoundException e) {
-			e.printStackTrace();
+			System.out.println("S:: Cannot find " + name + "/"+workingVersion+".ser");
+//			e.printStackTrace();
 		} catch (IOException e) {
+			System.out.println("S:: Cannot find " + name + "/"+workingVersion+".ser");
 			e.printStackTrace();
 		}
 	}
@@ -201,7 +205,7 @@ public class Shadower {
 			writer.write(""+committedVersion);
 		} catch (IOException e) {
 			System.out.println("S:: Fail to write to master record");
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 	}
 	

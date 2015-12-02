@@ -5,11 +5,10 @@
 
 package server;
 
+
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,27 +19,25 @@ import java.lang.reflect.Method;
 import java.net.Socket;
 import java.net.URL;
 import java.net.UnknownHostException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
+import javax.jws.WebMethod;
 import javax.jws.WebService;
 
-import server.ItemHistory.Action;
+import lockmanager.DeadlockException;
+import lockmanager.LockManager;
 import server.ItemHistory.ItemType;
 import server.Logger2PC.Type;
 import server.ws.ResourceManager;
-import lockmanager.DeadlockException;
-import lockmanager.LockManager;
 import TransactionManager.InvalidTransactionException;
 import TransactionManager.TransactionAbortedException;
 import TransactionManager.TransactionTimer;
+import TransactionManager.TransactionTimer.State;
 
 import com.google.gson.Gson;
 
@@ -53,8 +50,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	private Shadower shadower;
 	private String type;
 	private int crashPoint;
-	ResourceManager proxyCustomer;
-	ResourceManagerImplService service;
+//	ResourceManager proxyCustomer;
+//	ResourceManagerImplService service;
 	
 	private TransactionTimer timer;
 	
@@ -79,13 +76,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 			try {
 				String line = reader.readLine();
 				reader.close();
-				reader = new BufferedReader(new FileReader(new File("customer.txt")));
-				MW_LOCATION = reader.readLine();
-				MW_PORT = Integer.parseInt(reader.readLine());
+//				reader = new BufferedReader(new FileReader(new File("customer.txt")));
+//				MW_LOCATION = reader.readLine();
+//				MW_PORT = Integer.parseInt(reader.readLine());
 				
-				URL wsdlLocation = new URL("http", MW_LOCATION, MW_PORT, "/" + "rm" + "/rm?wsdl");
-				service = new ResourceManagerImplService(wsdlLocation);
-				proxyCustomer = service.getResourceManagerImplPort();
+//				URL wsdlLocation = new URL("http", MW_LOCATION, MW_PORT, "/" + "rm" + "/rm?wsdl");
+//				service = new ResourceManagerImplService(wsdlLocation);
+//				proxyCustomer = service.getResourceManagerImplPort();
 				if (line.equals("ws")) {
 					useWebService = true;
 				} else {
@@ -821,6 +818,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 				}
 			}
 		}
+		timer.setState(transactionId, TransactionTimer.State.Aborted);
 		return this.unlock(transactionId);
 	}
 
@@ -891,8 +889,14 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		Trace.info("RM:: Received vote request for "+transactionId);
 		
 		// sanity check
-		if(txnHistory.get(transactionId) == null) throw new InvalidTransactionException("No such transaction "+transactionId);
-		if (timer.isAborted(transactionId)) throw new TransactionAbortedException("Transaction aborted " + transactionId);
+		if(txnHistory.get(transactionId) == null) {
+			System.out.println("RM:: txn is no longer in my history");
+			throw new InvalidTransactionException("No such transaction "+transactionId);
+		}
+		if (timer.isAborted(transactionId)) {
+			System.out.println("RM:: txn was aborted");
+			throw new TransactionAbortedException("Transaction aborted " + transactionId);
+		}
 		
 		
 		// Write the data to a version file

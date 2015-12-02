@@ -73,7 +73,7 @@ public class TransactionManager {
 		try {
 			logPath = Paths.get("coordinator/log.txt");
 		} catch (InvalidPathException e) {
-			e.printStackTrace();
+//			e.printStackTrace();
 		}
 		try {
 			List<String> allLines = Files.readAllLines(logPath);
@@ -86,29 +86,36 @@ public class TransactionManager {
 
 				switch(split.length){
 				case 1:
-					String nextLine = i<n ? allLines.get(i+1) : "";
-					String[] nextSplit = nextLine.split(",");
-					switch(nextSplit.length){
-					case 2:
-						// Resend decision
-						int txn2 = Integer.parseInt(nextSplit[0]);
-						if (txn2 != txn) System.out.println("Transaction logging out of order! What!");
-						boolean decision = Boolean.parseBoolean(nextSplit[1]);
-						tryDecisionPhase(mw, txn, decision);
-						tryDecisionPhase(proxyFlight, txn, decision);
-						tryDecisionPhase(proxyCar, txn, decision);
-						tryDecisionPhase(proxyRoom, txn, decision);
-						break;
-					default:
-						// Transaction with undecided outcome
-						// Finish the 2PC for this transaction by sending abort 
+					// Check if next line is the decision for this transaction
+					if (i+1 < n) {
+						String nextLine = i<n ? allLines.get(i+1) : "";
+						String[] nextSplit = nextLine.split(",");
+						switch(nextSplit.length){
+						case 2:
+							// Check if this next line contains our txn id
+							// if it's ours, do nothing, it will get handled on next iteration
+							System.out.println("Next line has 2 arguments. Comparing id: " + nextSplit[0] + " vs " + split[0]);
+							if (nextSplit[0].equals(split[0])) break;
+						default:
+							// Transaction with undecided outcome
+							// Finish the 2PC for this transaction by sending abort 
+							System.out.println("Detect unfinished 2PC protocol. Sending abort of txn " + txn);
+							tryAbort(mw, txn);
+							tryAbort(proxyFlight, txn);
+							tryAbort(proxyCar, txn);
+							tryAbort(proxyRoom, txn);
+							if (nextLine.isEmpty()) return;
+							break;
+						}
+					} else {
+						// Next line doesn't exist - 2PC never finished
+						// Send abort
 						System.out.println("Detect unfinished 2PC protocol. Sending abort of txn " + txn);
 						tryAbort(mw, txn);
 						tryAbort(proxyFlight, txn);
 						tryAbort(proxyCar, txn);
 						tryAbort(proxyRoom, txn);
-						if (nextLine.isEmpty()) return;
-						break;
+						return;
 					}
 					break;
 				case 2:
@@ -306,6 +313,8 @@ public class TransactionManager {
 					}
 				} catch (Exception e) {
 					// One of the RM's consider the transaction invalid/aborted 
+					System.out.println("TM:: caught an error instead of a vote answer: ");
+					e.printStackTrace();
 					success = false;
 				}
 				System.out.println("TM:: vote decision: " + success); 

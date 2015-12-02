@@ -36,7 +36,6 @@ public class TransactionTimer {
 			while(!Thread.interrupted()){
 				Iterator<Entry<Integer, Txn>> it = transactions.entrySet().iterator();
 				while(it.hasNext()){
-					
 					Entry<Integer, Txn> transaction = it.next();
 					if(transaction.getValue().state == State.Active){
 						if(System.currentTimeMillis() - transaction.getValue().time > ttl ){
@@ -77,11 +76,14 @@ public class TransactionTimer {
 	
 	public boolean isAborted(int id) {
 		// Tells us if transaction is aborted or not
-		return transactions.get(id).state == State.Aborted;
+		Txn txn = transactions.get(id);
+		if (txn != null) return txn.state == State.Aborted;
+		return true;
 	}
 	
 	public void setState(int id, State type) {
 		// Set transaction to be committed so sweeper stops tracking it
-		transactions.get(id).state = type;
+		Txn txn = transactions.get(id);
+		if (txn != null) txn.state = type;
 	}
 }
