@@ -82,9 +82,10 @@ where location is one of the crash point numbers below
 
 ###How to change RM's vote answer in interactive client
 
-```setVote,target,voteAnswer```
+``` setVote,target,voteAnswer ```
 
 where target is mw, flight, car or room and voteAnswer is true or false.
+
 
 --
 
