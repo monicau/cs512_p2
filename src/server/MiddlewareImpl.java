@@ -112,6 +112,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		} catch (FileNotFoundException e) {
 			Trace.info("ERROR: Cannot find serviceType.txt");
 		}
+		
 		if (useWebService) {
 			//Create proxies
 			String flightServiceHost = null;

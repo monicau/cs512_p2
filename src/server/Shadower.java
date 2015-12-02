@@ -1,16 +1,20 @@
 package server;
 
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -31,6 +35,8 @@ public class Shadower {
 	private version committedVersion;
 	String name;
 	
+	protected String MW_LOCATION;
+	
 	
 	public Shadower(String name) {
 		this.name = name;
@@ -45,7 +51,16 @@ public class Shadower {
 				System.out.println("S:: error creating directory! ");
 			}
 		}
+		
+		
+		try(BufferedReader reader = new BufferedReader(new FileReader(new File("config.txt")))) {
+			MW_LOCATION = reader.readLine();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
+	
+	
 	
 	// Returns data if master record exists
 	public RMMap recover() {
@@ -70,7 +85,8 @@ public class Shadower {
 				case 2:
 					// RM replied but did not receive decision
 					// If its vote was yes, check if we received decision
-					if (!Boolean.parseBoolean(split[1])) {
+					System.out.println("Found an incomplete txn");
+					if (Boolean.parseBoolean(split[1])) {
 						int id = Integer.parseInt(split[0]);
 						// Check next line to see if it received decision
 						if (i+1 < n) {
@@ -79,7 +95,33 @@ public class Shadower {
 							int nextId = Integer.parseInt(splitNextLine[0]);
 							if (nextId != id) {
 								// TODO: ask coordinator about decision for this txn
-								
+								Socket coordinator = new Socket(MW_LOCATION, 9999);
+								PrintWriter writer = new PrintWriter(coordinator.getOutputStream());
+								writer.println(id);
+								writer.flush();
+								BufferedReader br = new BufferedReader(new InputStreamReader(coordinator.getInputStream()));
+								String in = br.readLine();
+								boolean decision = Boolean.parseBoolean(in);
+								System.out.println("S::The incomplete transaction was committed :"+decision);
+								coordinator.close();
+								if(decision){
+									actualCommit();
+								}
+							}
+						}
+						else{
+							// if this is the last line then it was not completed, so try to complete transaction
+							Socket coordinator = new Socket(MW_LOCATION, 9999);
+							PrintWriter writer = new PrintWriter(coordinator.getOutputStream());
+							writer.println(id);
+							writer.flush();
+							BufferedReader br = new BufferedReader(new InputStreamReader(coordinator.getInputStream()));
+							String in = br.readLine();
+							boolean decision = Boolean.parseBoolean(in);
+							System.out.println("S::The incomplete transaction was committed :"+decision);
+							coordinator.close();
+							if(decision){
+								actualCommit();
 							}
 						}
 					}
@@ -93,8 +135,12 @@ public class Shadower {
 			System.out.println("S:: Cannot find " + name + "/log.txt");
 //			e.printStackTrace();
 		}
-		
-		
+		// the incomplete logs are no longer valid so delete them
+		try {
+			Files.deleteIfExists(logPath);
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
 		// Check if master record exists
 		try {
 			// Try to read from master record

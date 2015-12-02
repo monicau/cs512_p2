@@ -2,6 +2,7 @@ package main;
 
 import java.io.File;
 import java.io.PrintWriter;
+import java.util.Arrays;
 
 import org.apache.catalina.startup.Tomcat;
 
@@ -87,7 +88,9 @@ public class Main {
 //        	writer.println(mwPort);
 //        	writer.close();
         }
-        
+        Arrays.stream(args).forEach(str ->{
+        	System.out.println(str);
+        });
         tomcat.start();
         tomcat.getServer().await();
     }

@@ -4,7 +4,12 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -12,11 +17,13 @@ import java.nio.file.Paths;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Map.Entry;
 import java.util.StringTokenizer;
 import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -50,6 +57,8 @@ public class TransactionManager {
 	
 	private int crashPoint;
 	
+	private Map<Integer, Boolean> oldTransactions = new ConcurrentHashMap<>();
+	
 	public TransactionManager(MiddlewareImpl middleware, ResourceManager flight, ResourceManager car, ResourceManager room) {
 		activeRMs = new RMMap<Integer, Vector<RM>>();
 		timeAlive = new RMMap<Integer, Integer>();
@@ -65,6 +74,41 @@ public class TransactionManager {
 		this.logger = new Logger2PC(Type.coordinator);
 		
 		recover2();
+		
+		// start a server thread for recovery of rms
+		// using static port 9999
+		
+		try {
+			ServerSocket socket =  new ServerSocket(9999);
+			
+			Thread acceptor = new Thread(() -> {
+				while(true){
+					try {
+						Socket incoming = socket.accept();
+						Thread recoveryHelper = new Thread(()->{
+							try {
+								BufferedReader br = new BufferedReader(new InputStreamReader(incoming.getInputStream()));
+								PrintWriter writer = new PrintWriter(incoming.getOutputStream());
+								String line = br.readLine();
+								Boolean data = oldTransactions.get(Integer.parseInt(line));
+								writer.write(""+data);
+								writer.close();
+								br.close();
+							} catch (Exception e) {
+								e.printStackTrace();
+							}
+						});
+						recoveryHelper.start();
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
+				}
+				
+			});
+			acceptor.start();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 	// fixed infinite loop
@@ -371,18 +415,22 @@ public class TransactionManager {
 				switch (rm){
 				case CAR:
 					System.out.println("Sending decision to car.. ");
+					oldTransactions.put( txnID, successful);
 					proxyCar.decisionPhase(txnID, successful);
 					break;
 				case FLIGHT:
 					System.out.println("Sending decision to flight.. ");
+					oldTransactions.put( txnID, successful);
 					proxyFlight.decisionPhase(txnID, successful);
 					break;
 				case ROOM:
 					System.out.println("Sending decision to room.. ");
+					oldTransactions.put( txnID, successful);
 					proxyRoom.decisionPhase(txnID, successful);
 					break;
 				case CUSTOMER:
 					System.out.println("Sending decision to mw.. ");
+					oldTransactions.put( txnID, successful);
 					mw.decisionPhase(txnID, successful);
 					break;
 				}
