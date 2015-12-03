@@ -656,6 +656,21 @@ public class Client extends WSClient {
                     System.out.println(e.getMessage());
             	}
                 break;
+            case 29:
+            	if (arguments.size() != 3) {
+            		wrongNumber();
+                    break;
+            	}
+            	try {
+            		String target = getString(arguments.elementAt(1)).toLowerCase();
+            		boolean vote = Boolean.parseBoolean(getString(arguments.elementAt(2)));
+            		System.out.println("Setting " + target + " to vote " + vote);
+            		proxy.setVote(target, vote);
+            	} catch (Exception e) {
+            		System.out.println("EXCEPTION: ");
+                    System.out.println(e.getMessage());
+            	}
+            	break;
             default:
                 System.out.println("The interface does not support this command.");
                 break;
@@ -732,6 +747,8 @@ public class Client extends WSClient {
         	return 27;
         else if (argument.compareToIgnoreCase("crashAt") == 0) 
         	return 28;
+        else if (argument.compareToIgnoreCase("setVote") == 0) 
+        	return 29;
         else
             return 666;
     }
@@ -973,6 +990,12 @@ public class Client extends WSClient {
             	System.out.println("Crashes a server at a specific time during 2PC");
             	System.out.println("\nUsage: ");
                 System.out.println("\tcrashAt,target,location \t where target = mw, flight, car or room, location=1,2,3...");
+        	break;
+        	
+            case 29: //set default vote answer
+            	System.out.println("Set default vote answer");
+            	System.out.println("\nUsage: ");
+                System.out.println("\tsetVote,target,vote \t where target = mw, flight, car or room, vote=true or false");
         	break;
         	
             default:

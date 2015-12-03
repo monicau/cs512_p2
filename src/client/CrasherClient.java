@@ -41,6 +41,8 @@ public class CrasherClient extends WSClient {
 		String target = (crashCase <= 7) ? "mw" : getTarget(in);
 		proxy.crashPoint(target, crashCase);
 		System.out.println("Crash point has been set");
+		System.out.println("Change default vote? Default votes are yesses.  (y/n)");
+		handleVote(in);
 		System.out.println("Starting automated transaction ");
 		try {
 			automatedTransaction(crashCase, target);
@@ -49,12 +51,35 @@ public class CrasherClient extends WSClient {
 		}
 	}
 	
+	private void handleVote(BufferedReader in) {
+		String read = readIn(in);
+		if (read.toLowerCase().equals("n")) return;
+		System.out.println("Set flight's vote answer: (true/false)");
+		read = readIn(in);
+		boolean answer = Boolean.parseBoolean(read);
+		proxy.setVote("flight", answer);
+		System.out.println("Set car's vote answer: (true/false)");
+		read = readIn(in);
+		answer = Boolean.parseBoolean(read);
+		proxy.setVote("car", answer);
+		System.out.println("Set room's vote answer: (true/false)");
+		read = readIn(in);
+		answer = Boolean.parseBoolean(read);
+		proxy.setVote("room", answer);
+		System.out.println("Set customer's vote answer: (true/false)");
+		read = readIn(in);
+		answer = Boolean.parseBoolean(read);
+		proxy.setVote("mw", answer);
+		return;
+	}
+	
 	private void automatedTransaction(int crashCase, String target) throws Exception{
 		int id = proxy.start();
 		String command = 
 				target.equals("flight") ? "newFlight":
 				target.equals("car") ? "newCar":
 				target.equals("room") ? "newRoom":
+				target.equals("customer") ? "customer":
 				target.equals("mw") ? "mw" : ""; // Dunno what to put for mw
 		Random random = new Random();
 		int r1 = crashCase;
@@ -74,24 +99,28 @@ public class CrasherClient extends WSClient {
 				print("Running "+command+"(" + id +","+r1+","+r2+","+r3+")");
 				proxy.addRooms(id, ""+r1,r2,r3);
 				break;
-			case "mw":
-				// use flight rm
-				print("Started new transaction: " + id);
+			case "customer":
+				print("Running newCustomer(" + id + ")");
 				int customer = proxy.newCustomer(id);
+				print("Customer ID: " + customer);
+				break;
+			case "mw":
+				print("Started new transaction: " + id);
+				customer = proxy.newCustomer(id);
 				print("Created new customer " + customer);
 				print("Running newFlight(" + id +","+r1+","+r2+","+r3+")");
-				proxy.addFlight(id,2,2,2);
+				proxy.addFlight(id,r1,r2,r3);
 				print("Running newCar(" + id +",car"+r1+","+r2+","+r3+")");
-				proxy.addCars(id,"car2",2,2);
+				proxy.addCars(id,"car"+r1,r2,r3);
 				print("Running newRoom(" + id +",room"+r1+","+r2+","+r3+")");
-				proxy.addRooms(id,"room2",2,2);
+				proxy.addRooms(id,"room"+r1,r2,r3);
 
 				print("Reserving flight...");
-				proxy.reserveFlight(id, customer, 2);
+				proxy.reserveFlight(id, customer, r1);
 				print("Reserving car...");
-				proxy.reserveCar(id, customer, "car2");
+				proxy.reserveCar(id, customer, "car"+r1);
 				print("Reserving room...");
-				proxy.reserveRoom(id, customer, "room2");
+				proxy.reserveRoom(id, customer, "room"+r2);
 				break;
 			default:	
 				throw new IllegalStateException("Command ,"+command+", is not a valid command");
@@ -366,12 +395,12 @@ public class CrasherClient extends WSClient {
 	private String getTarget(BufferedReader stdin) {
 		String input;
 		String target = null;
-		print("Which server to crash? (mw/flight/car/room)");
+		print("Which server to crash? (customer/flight/car/room)");
 		try {
 	        while (target == null) {
 	        	input = stdin.readLine();
 		        input = input.trim().toLowerCase();
-		        if (input.toLowerCase().equals("mw") || input.toLowerCase().equals("flight") || input.toLowerCase().equals("car") || input.toLowerCase().equals("room")) {
+		        if (input.toLowerCase().equals("customer") || input.toLowerCase().equals("flight") || input.toLowerCase().equals("car") || input.toLowerCase().equals("room")) {
 		        	target = input;
 		        } else {
 		        	print("Invalid input.  Valid inputs are: mw, flight, car, room");

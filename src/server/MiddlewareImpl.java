@@ -42,6 +42,10 @@ import java.net.Socket;
 import java.net.URL;
 import java.net.MalformedURLException;
 import java.nio.channels.AsynchronousServerSocketChannel;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import javax.jws.WebMethod;
 import javax.jws.WebService;
@@ -50,6 +54,7 @@ import server.Logger2PC;
 import lockmanager.DeadlockException;
 import lockmanager.LockManager;
 import TransactionManager.InvalidTransactionException;
+import TransactionManager.TransactionAbortedException;
 import TransactionManager.TransactionManager;
 import TransactionManager.TransactionTimer;
 import TransactionManager.TransactionManager.RM;
@@ -81,11 +86,14 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	private Logger2PC logger;
 	private TransactionTimer timer;
+	private boolean voteAnswer;
+	private int crashPoint;
 	
 	public MiddlewareImpl(){
 		System.out.println("Starting middleware");
 		this.timer = new TransactionTimer(60000, this::abortCustomer);
 		this.timer.start();
+		this.voteAnswer = true;
 		lm = new LockManager();
 		txnHistory = new RMMap<Integer, Vector<ItemHistory>>();
 		shadower = new Shadower("mw"); 
@@ -697,10 +705,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Customer operations //
 
 	@Override
-	public int newCustomer(int id) throws DeadlockException, InvalidTransactionException {
+	public int newCustomer(int id) throws DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
 		Trace.info("INFO: MW::newCustomer(" + id + ") called.");
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		tm.enlist(id, RM.CUSTOMER);
 		// Generate a globally unique Id for the new customer.
 		int customerId;
@@ -724,9 +733,10 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	// This method makes testing easier.
 	@Override
-	public boolean newCustomerId(int id, int customerId) throws DeadlockException, InvalidTransactionException {
+	public boolean newCustomerId(int id, int customerId) throws DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		Trace.info("INFO: MW::newCustomer(" + id + ", " + customerId + ") called.");
 		tm.enlist(id, RM.CUSTOMER);
 		//Lock on new customer
@@ -750,10 +760,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	// Delete customer from the database. 
 	@Override
-	public boolean deleteCustomer(int id, int customerId) throws DeadlockException, InvalidTransactionException {
+	public boolean deleteCustomer(int id, int customerId) throws DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
 		Trace.info("MW::deleteCustomer(" + id + ", " + customerId + ") called.");
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		tm.enlist(id, RM.CUSTOMER);
 		//Write lock on customer
 		lm.Lock(id, "customer_" + customerId, LockManager.WRITE);
@@ -803,11 +814,12 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	// Return data structure containing customer reservation info. 
 	// Returns null if the customer doesn't exist. 
 	// Returns empty RMMap if customer exists but has no reservations.
-	public RMMap getCustomerReservations(int id, int customerId) throws DeadlockException, InvalidTransactionException {
+	public RMMap getCustomerReservations(int id, int customerId) throws DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
 		Trace.info("MW::getCustomerReservations(" + id + ", " 
 				+ customerId + ") called.");
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		tm.enlist(id, RM.CUSTOMER);
 		// Read lock on customer
 		lm.Lock(id, "customer_" + customerId, LockManager.READ);
@@ -823,10 +835,11 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 
 	// Return a bill.
 	@Override
-	public String queryCustomerInfo(int id, int customerId) throws DeadlockException, InvalidTransactionException {
+	public String queryCustomerInfo(int id, int customerId) throws DeadlockException, InvalidTransactionException, TransactionAbortedException {
 		if (!tm.isValidTransaction(id)) throw new InvalidTransactionException();
 		Trace.info("MW::queryCustomerInfo(" + id + ", " + customerId + ") called.");
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		tm.enlist(id, RM.CUSTOMER);
 		// Read lock on customer
 		lm.Lock(id, "customer_" + customerId, LockManager.READ);
@@ -1157,22 +1170,36 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	}
 	@Override
 	public boolean prepare(int transactionId) {
-		Trace.info("RM:: commiting transaction "+transactionId);
+		Trace.info("RM:: received vote request for txn "+transactionId);
 		// sanity check
 		if(txnHistory.get(transactionId) == null) return false;
 		txnHistory.remove(transactionId);
 		shadower.prepareCommit(m_itemHT);
 		
 		// log the event
-		boolean answer = true;
-		this.logger.log(transactionId+","+answer);
-		return answer;
+		this.logger.log(transactionId+","+voteAnswer);
+		
+		if (crashPoint == 8) selfDestruct();
+		else if (crashPoint == 9) selfDestructIn(2000); // Allow time to send answer before crashing
+
+		return voteAnswer;
+	}
+
+	private void selfDestructIn(int time) {
+		System.out.println("Self destructing in " + time + " ms");
+		timer.kill();
+		new TimedExit(time);
 	}
 
 	@Override
-	public boolean decisionPhase(int transactionId, boolean commit) {
-		// log the event
+	public boolean decisionPhase(int transactionId, boolean commit) {		
+		if (crashPoint == 9) {
+			// Supposed to crash after sending answer but we're so fast we're still in self-destruct count down.  
+			// Prevent going further with 2PC by looping.
+			while(true);
+		}
 		System.out.println("RM:: Received decision for " + transactionId + ": " + commit);
+		if (crashPoint == 10) selfDestruct();
 		if (timer.isActive(transactionId)) {
 			if(commit){
 				shadower.actualCommit();
@@ -1189,7 +1216,6 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		} else {
 			System.out.println("MW:: received decision phase for txn " + transactionId + " but this txn is inactive. Ignoring.");
 		}
-		return true;
 	}
 	
 
@@ -1338,11 +1364,14 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	@Override
 	public void crashPoint(String target, int crashPoint) {
 		System.out.println("MW:: crashing " + target);
+		
 		// Send crash point to transaction manager
 		setCrashPoint(crashPoint);
 		
 		// Send crash point to right RM
-		if (target.equals("flight")) {
+		if (target.equals("customer")) {
+			this.crashPoint = crashPoint;
+		} else if (target.equals("flight")) {
 			proxyFlight.setCrashPoint(crashPoint);
 		} else if (target.equals("car")) {
 			proxyCar.setCrashPoint(crashPoint);
@@ -1367,6 +1396,20 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 	public String getType() {
 		// TODO Auto-generated method stub
 		return null;
+	}
+	
+	@Override
+	public void setVote(String target, boolean vote) {
+		if (target.equals("mw")) {
+			System.out.println("MW:: Setting default vote to: " + vote);
+			this.voteAnswer = vote;
+		} else if (target.equals("flight")) {
+			proxyFlight.setVote(target, vote);
+		} else if (target.equals("car")) {
+			proxyCar.setVote(target, vote);
+		} else if (target.equals("room")) {
+			proxyRoom.setVote(target, vote);
+		}
 	}
 }
 

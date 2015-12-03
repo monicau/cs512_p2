@@ -143,6 +143,7 @@ public class TransactionManager {
 								oldTransactions.put(Integer.parseInt(split[0]), Boolean.parseBoolean(split[1]));
 								break;
 							}
+
 						default:
 							// Transaction with undecided outcome
 							// Finish the 2PC for this transaction by sending abort 
