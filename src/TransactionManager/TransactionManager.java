@@ -140,7 +140,7 @@ public class TransactionManager {
 							// if it's ours, do nothing, it will get handled on next iteration
 							System.out.println("Next line has 2 arguments. Comparing id: " + nextSplit[0] + " vs " + split[0]);
 							if (nextSplit[0].equals(split[0])) {
-								oldTransactions.put(Integer.parseInt(split[0]), Boolean.parseBoolean(split[1]));
+								oldTransactions.put(Integer.parseInt(nextSplit[0]), Boolean.parseBoolean(nextSplit[1]));
 								break;
 							}
 

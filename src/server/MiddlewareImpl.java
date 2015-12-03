@@ -204,6 +204,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 			RMMap recovery = shadower.recover();
 			if (recovery != null ) {
 				System.out.println("MW:: Recovered data");
+				System.out.println(recovery);
 				m_itemHT = recovery;
 			}
 			
@@ -1212,9 +1213,10 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 				}
 			}
 			this.logger.log(transactionId+", ,"+commit);
-			this.unlock(transactionId);
+			return this.unlock(transactionId);
 		} else {
 			System.out.println("MW:: received decision phase for txn " + transactionId + " but this txn is inactive. Ignoring.");
+			return false;
 		}
 	}
 	
