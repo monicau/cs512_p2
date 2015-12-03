@@ -1170,7 +1170,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		return r;
 	}
 	@Override
-	public boolean prepare(int transactionId) {
+	public boolean prepare(int transactionId) throws InvalidTransactionException, TransactionAbortedException {
 		Trace.info("RM:: received vote request for txn "+transactionId);
 		// sanity check
 		if(txnHistory.get(transactionId) == null) return false;
@@ -1202,6 +1202,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		System.out.println("RM:: Received decision for " + transactionId + ": " + commit);
 		if (crashPoint == 10) selfDestruct();
 		if (timer.isActive(transactionId)) {
+			if (txnHistory.get(transactionId)==null) return false;
 			if(commit){
 				shadower.actualCommit();
 			}

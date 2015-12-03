@@ -902,8 +902,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		
 		// sanity check
 		if(txnHistory.get(transactionId) == null) {
-			System.out.println("RM:: txn is no longer in my history");
-			throw new InvalidTransactionException("No such transaction "+transactionId);
+			System.out.println("RM:: txn is not in my history (no changes were made in this txn), committing nothing.");
+			throw new InvalidTransactionException("Invalid transaction exception"+transactionId);
 		}
 		if (timer.isAborted(transactionId)) {
 			System.out.println("RM:: txn was aborted");
@@ -932,6 +932,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		System.out.println("RM:: Received decision for " + transactionId + ": " + commit);
 		if (crashPoint == 10) selfDestruct();
 		if (timer.isActive(transactionId)) {
+			if (txnHistory.get(transactionId)==null) return false;
 			if(commit){
 				shadower.actualCommit();
 				timer.setState(transactionId, TransactionTimer.State.Committed);

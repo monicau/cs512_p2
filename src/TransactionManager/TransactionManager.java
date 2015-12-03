@@ -365,7 +365,9 @@ public class TransactionManager {
 					// One of the RM's consider the transaction invalid/aborted 
 					System.out.println("TM:: caught an error instead of a vote answer: ");
 					e.printStackTrace();
-					success = false;
+					if (e.getMessage().contains("aborted")) {
+						success = false;
+					}
 				}
 				System.out.println("TM:: vote decision: " + success); 
 				return success;
