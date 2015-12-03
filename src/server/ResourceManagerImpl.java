@@ -365,8 +365,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	// its current price.
 	@Override
 	synchronized public boolean addFlight(int id, int flightNumber,
-			int numSeats, int flightPrice) throws DeadlockException {
+			int numSeats, int flightPrice) throws DeadlockException, TransactionAbortedException {
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		Trace.info("RM::addFlight(" + id + ", " + flightNumber + ", $"
 				+ flightPrice + ", " + numSeats + ") called.");
 		type = "flight";
@@ -409,23 +410,26 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	}
 
 	@Override
-	public boolean deleteFlight(int id, int flightNumber) throws DeadlockException {
+	public boolean deleteFlight(int id, int flightNumber) throws DeadlockException, TransactionAbortedException {
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		lm.Lock(id, Flight.getKey(flightNumber), LockManager.WRITE);
 		return deleteItem(id, Flight.getKey(flightNumber));
 	}
 
 	// Returns the number of empty seats on this flight.
 	@Override
-	public int queryFlight(int id, int flightNumber) throws DeadlockException {
+	public int queryFlight(int id, int flightNumber) throws DeadlockException, TransactionAbortedException {
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		lm.Lock(id, Flight.getKey(flightNumber), LockManager.READ);
 		return queryNum(id, Flight.getKey(flightNumber));
 	}
 
 	// Returns price of this flight.
-	public int queryFlightPrice(int id, int flightNumber) throws DeadlockException {
+	public int queryFlightPrice(int id, int flightNumber) throws DeadlockException, TransactionAbortedException {
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		lm.Lock(id, Flight.getKey(flightNumber), LockManager.READ);
 		return queryPrice(id, Flight.getKey(flightNumber));
 	}
@@ -462,8 +466,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	// its current price.
 	@Override
 	synchronized public boolean addCars(int id, String location, int numCars,
-			int carPrice) throws DeadlockException {
+			int carPrice) throws DeadlockException, TransactionAbortedException {
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		Trace.info("RM::addCars(" + id + ", " + location + ", " + numCars
 				+ ", $" + carPrice + ") called.");
 		type = "car";
@@ -503,24 +508,27 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
 	// Delete cars from a location.
 	@Override
-	public boolean deleteCars(int id, String location) throws DeadlockException {
+	public boolean deleteCars(int id, String location) throws DeadlockException, TransactionAbortedException {
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		lm.Lock(id, Car.getKey(location), LockManager.WRITE);
 		return deleteItem(id, Car.getKey(location));
 	}
 
 	// Returns the number of cars available at a location.
 	@Override
-	public int queryCars(int id, String location) throws DeadlockException {
+	public int queryCars(int id, String location) throws DeadlockException, TransactionAbortedException {
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		lm.Lock(id, Car.getKey(location), LockManager.READ);
 		return queryNum(id, Car.getKey(location));
 	}
 
 	// Returns price of cars at this location.
 	@Override
-	public int queryCarsPrice(int id, String location) throws DeadlockException {
+	public int queryCarsPrice(int id, String location) throws DeadlockException, TransactionAbortedException {
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		lm.Lock(id, Car.getKey(location), LockManager.READ);
 		return queryPrice(id, Car.getKey(location));
 	}
@@ -532,8 +540,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	// its current price.
 	@Override
 	synchronized public boolean addRooms(int id, String location, int numRooms,
-			int roomPrice) throws DeadlockException {
+			int roomPrice) throws DeadlockException, TransactionAbortedException {
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		Trace.info("RM::addRooms(" + id + ", " + location + ", " + numRooms
 				+ ", $" + roomPrice + ") called.");
 		type = "room";
@@ -572,24 +581,27 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
 	// Delete rooms from a location.
 	@Override
-	public boolean deleteRooms(int id, String location) throws DeadlockException {
+	public boolean deleteRooms(int id, String location) throws DeadlockException, TransactionAbortedException {
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		lm.Lock(id, Room.getKey(location), LockManager.WRITE);
 		return deleteItem(id, Room.getKey(location));
 	}
 
 	// Returns the number of rooms available at a location.
 	@Override
-	public int queryRooms(int id, String location) throws DeadlockException {
+	public int queryRooms(int id, String location) throws DeadlockException, TransactionAbortedException {
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		lm.Lock(id, Room.getKey(location), LockManager.READ);
 		return queryNum(id, Room.getKey(location));
 	}
 
 	// Returns room price at this location.
 	@Override
-	public int queryRoomsPrice(int id, String location) throws DeadlockException {
+	public int queryRoomsPrice(int id, String location) throws DeadlockException, TransactionAbortedException {
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		lm.Lock(id, Room.getKey(location), LockManager.READ);
 		return queryPrice(id, Room.getKey(location));
 	}
@@ -636,12 +648,14 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 	 *            car or room location if applicable
 	 * @return true if success, else false
 	 * @throws DeadlockException
+	 * @throws TransactionAbortedException 
 	 */
 	// Add reservation
 	@Override
 	public boolean reserveItem(String reserveType, int id, int flightNumber,
-			String location) throws DeadlockException {
+			String location) throws DeadlockException, TransactionAbortedException {
 		timer.ping(id);
+		if (!timer.isActive(id)) throw new TransactionAbortedException("Transaction was aborted.");
 		String key = null;
 		ItemType itemType;
 		if (reserveType.toLowerCase().equals("flight")) {
@@ -800,7 +814,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 							rmItem.setReserved(rmItem.getReserved() - 1);
 			        	}
 					} catch (Exception e) {
-						Trace.info("Fail to remove reservation. Doesn't exist.");
 					}
 					break;
 				case UPDATED:
@@ -911,12 +924,12 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
 	@Override
 	public boolean decisionPhase(int transactionId, boolean commit) {
-		System.out.println("RM:: Received decision for " + transactionId + ": " + commit);
 		if (crashPoint == 9) {
 			// Supposed to crash after sending answer but we're so fast we're still in self-destruct count down.  
 			// Prevent going further with 2PC by looping.
 			while(true);
-		}
+		}		
+		System.out.println("RM:: Received decision for " + transactionId + ": " + commit);
 		if (crashPoint == 10) selfDestruct();
 		if (timer.isActive(transactionId)) {
 			if(commit){

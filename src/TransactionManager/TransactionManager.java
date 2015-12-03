@@ -138,7 +138,7 @@ public class TransactionManager {
 						case 2:
 							// Check if this next line contains our txn id
 							// if it's ours, do nothing, it will get handled on next iteration
-							System.out.println("Next line has 2 arguments. Comparing id: " + nextSplit[0] + " vs " + split[0]);
+//							System.out.println("Next line has 2 arguments. Comparing id: " + nextSplit[0] + " vs " + split[0]);
 							if (nextSplit[0].equals(split[0])) break;
 						default:
 							// Transaction with undecided outcome

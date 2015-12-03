@@ -41,7 +41,7 @@ public class CrasherClient extends WSClient {
 		String target = (crashCase <= 7) ? "mw" : getTarget(in);
 		proxy.crashPoint(target, crashCase);
 		System.out.println("Crash point has been set");
-		System.out.println("Set vote answers? Default votes are yesses.  (y/n)");
+		System.out.println("Change default vote? Default votes are yesses.  (y/n)");
 		handleVote(in);
 		System.out.println("Starting automated transaction ");
 		try {
@@ -79,6 +79,7 @@ public class CrasherClient extends WSClient {
 				target.equals("flight") ? "newFlight":
 				target.equals("car") ? "newCar":
 				target.equals("room") ? "newRoom":
+				target.equals("customer") ? "customer":
 				target.equals("mw") ? "mw" : ""; // Dunno what to put for mw
 		Random random = new Random();
 		int r1 = crashCase;
@@ -98,10 +99,14 @@ public class CrasherClient extends WSClient {
 				print("Running "+command+"(" + id +","+r1+","+r2+","+r3+")");
 				proxy.addRooms(id, ""+r1,r2,r3);
 				break;
-			case "mw":
-				// use flight rm
-				print("Started new transaction: " + id);
+			case "customer":
+				print("Running newCustomer(" + id + ")");
 				int customer = proxy.newCustomer(id);
+				print("Customer ID: " + customer);
+				break;
+			case "mw":
+				print("Started new transaction: " + id);
+				customer = proxy.newCustomer(id);
 				print("Created new customer " + customer);
 				print("Running newFlight(" + id +","+r1+","+r2+","+r3+")");
 				proxy.addFlight(id,r1,r2,r3);
@@ -390,12 +395,12 @@ public class CrasherClient extends WSClient {
 	private String getTarget(BufferedReader stdin) {
 		String input;
 		String target = null;
-		print("Which server to crash? (mw/flight/car/room)");
+		print("Which server to crash? (customer/flight/car/room)");
 		try {
 	        while (target == null) {
 	        	input = stdin.readLine();
 		        input = input.trim().toLowerCase();
-		        if (input.toLowerCase().equals("mw") || input.toLowerCase().equals("flight") || input.toLowerCase().equals("car") || input.toLowerCase().equals("room")) {
+		        if (input.toLowerCase().equals("customer") || input.toLowerCase().equals("flight") || input.toLowerCase().equals("car") || input.toLowerCase().equals("room")) {
 		        	target = input;
 		        } else {
 		        	print("Invalid input.  Valid inputs are: mw, flight, car, room");

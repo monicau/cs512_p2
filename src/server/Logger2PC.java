@@ -32,7 +32,6 @@ public class Logger2PC {
 			BufferedWriter br = new BufferedWriter(new FileWriter(log, true));
 			br.write(msg +"\n");
 			br.close();
-			System.out.println("Done logging.");
 		} catch (FileNotFoundException e) {
 			System.out.println("Logger: cannot find " + type + "/log.txt");
 //			e.printStackTrace();
