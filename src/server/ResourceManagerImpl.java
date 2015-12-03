@@ -918,7 +918,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 		
 		if (crashPoint == 8) selfDestruct();
 		else if (crashPoint == 9) selfDestructIn(2000); // Allow time to send answer before crashing
-		
+		System.out.println("Sending its vote: " +voteAnswer);
 		return voteAnswer;
 	}
 
