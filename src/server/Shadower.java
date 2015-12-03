@@ -15,6 +15,7 @@ import java.io.ObjectOutputStream;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.Socket;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -95,34 +96,11 @@ public class Shadower {
 							int nextId = Integer.parseInt(splitNextLine[0]);
 							if (nextId != id) {
 								// TODO: ask coordinator about decision for this txn
-								Socket coordinator = new Socket(MW_LOCATION, 9999);
-								PrintWriter writer = new PrintWriter(coordinator.getOutputStream());
-								writer.println(id);
-								writer.flush();
-								BufferedReader br = new BufferedReader(new InputStreamReader(coordinator.getInputStream()));
-								String in = br.readLine();
-								boolean decision = Boolean.parseBoolean(in);
-								System.out.println("S::The incomplete transaction was committed :"+decision);
-								coordinator.close();
-								if(decision){
-									actualCommit();
-								}
+								askCoordinator(id);
 							}
 						}
 						else{
-							// if this is the last line then it was not completed, so try to complete transaction
-							Socket coordinator = new Socket(MW_LOCATION, 9999);
-							PrintWriter writer = new PrintWriter(coordinator.getOutputStream());
-							writer.println(id);
-							writer.flush();
-							BufferedReader br = new BufferedReader(new InputStreamReader(coordinator.getInputStream()));
-							String in = br.readLine();
-							boolean decision = Boolean.parseBoolean(in);
-							System.out.println("S::The incomplete transaction was committed :"+decision);
-							coordinator.close();
-							if(decision){
-								actualCommit();
-							}
+							askCoordinator(id);
 						}
 					}
 					break;
@@ -178,6 +156,23 @@ public class Shadower {
 			System.out.println("S:: Fail to read master record.");
 		}
 		return null;
+	}
+
+
+
+	private void askCoordinator(int id) throws UnknownHostException, IOException {
+		Socket coordinator = new Socket(MW_LOCATION, 9999);
+		PrintWriter writer = new PrintWriter(coordinator.getOutputStream());
+		writer.println(id);
+		writer.flush();
+		BufferedReader br = new BufferedReader(new InputStreamReader(coordinator.getInputStream()));
+		String in = br.readLine();
+		boolean decision = Boolean.parseBoolean(in);
+		System.out.println("S::The incomplete transaction was committed :"+decision);
+		coordinator.close();
+		if(decision){
+			actualCommit();
+		}
 	}
 	
 	public int recoverTxnID() {

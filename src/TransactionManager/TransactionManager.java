@@ -139,7 +139,10 @@ public class TransactionManager {
 							// Check if this next line contains our txn id
 							// if it's ours, do nothing, it will get handled on next iteration
 							System.out.println("Next line has 2 arguments. Comparing id: " + nextSplit[0] + " vs " + split[0]);
-							if (nextSplit[0].equals(split[0])) break;
+							if (nextSplit[0].equals(split[0])) {
+								oldTransactions.put(Integer.parseInt(split[0]), Boolean.parseBoolean(split[1]));
+								break;
+							}
 						default:
 							// Transaction with undecided outcome
 							// Finish the 2PC for this transaction by sending abort 
@@ -148,6 +151,7 @@ public class TransactionManager {
 							tryAbort(proxyFlight, txn);
 							tryAbort(proxyCar, txn);
 							tryAbort(proxyRoom, txn);
+							oldTransactions.put(txn, false);
 							if (nextLine.isEmpty()) return;
 							break;
 						}
@@ -159,6 +163,7 @@ public class TransactionManager {
 						tryAbort(proxyFlight, txn);
 						tryAbort(proxyCar, txn);
 						tryAbort(proxyRoom, txn);
+						oldTransactions.put(txn, false);
 						return;
 					}
 					break;

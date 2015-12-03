@@ -89,12 +89,7 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 		lm = new LockManager();
 		txnHistory = new RMMap<Integer, Vector<ItemHistory>>();
 		shadower = new Shadower("mw"); 
-		//Try to recover any saved state
-		RMMap recovery = shadower.recover();
-		if (recovery != null ) {
-			System.out.println("MW:: Recovered data");
-			m_itemHT = recovery;
-		}
+
 		//Determine if we are using web services or tcp
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(new File("serviceType.txt")));
@@ -196,6 +191,14 @@ public class MiddlewareImpl implements server.ws.ResourceManager {
 				Trace.info("ERROR: File not found!");
 			}
 			tm = new TransactionManager(this, proxyFlight, proxyCar, proxyRoom);
+			
+			//Try to recover any saved state
+			RMMap recovery = shadower.recover();
+			if (recovery != null ) {
+				System.out.println("MW:: Recovered data");
+				m_itemHT = recovery;
+			}
+			
 			int txnCounter = shadower.recoverTxnID();
 			if (txnCounter > 0) {
 				tm.setTxnCounter(txnCounter);
