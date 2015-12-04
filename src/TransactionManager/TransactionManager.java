@@ -183,6 +183,13 @@ public class TransactionManager {
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		// Delete log
+		try {
+			System.out.println("Deleting " + logPath.toString());
+			Files.deleteIfExists(logPath);
+		} catch (IOException e1) {
+			e1.printStackTrace();
+		}
 	}
 	
 	private void tryAbort(ResourceManager rm, int txn){
@@ -333,25 +340,75 @@ public class TransactionManager {
 			@Override
 			public Boolean call() throws Exception {
 				boolean success = true;
-				try {
+
 					if (rms != null) {
 						for (RM rm : rms) {
 							switch (rm) {
 							case CUSTOMER:
 								System.out.println("TM:: sending vote request to customer");
-								success &= mw.prepare(txnID);
+								try {
+									success &= mw.prepare(txnID);
+									System.out.println("TM:: received vote answer from customer. Now = " + success);
+								} catch (Exception e) {
+									if (e.getMessage().contains("aborted")) {
+										System.out.println("TM:: Received aborted message from customer.  Setting decision to false.");
+										success = false;
+									} else if (e.getMessage().contains("Connection refused")) {
+										System.out.println("TM:: Lost connection with flight. ");
+										success = false;
+									} else {
+										System.out.println("Some other exception:");
+										System.out.println(e.getMessage());
+									}
+								}
 								break;
 							case FLIGHT:
 								System.out.println("TM:: sending vote request to flight");
-								success &= proxyFlight.prepare(txnID);
+								try {
+									success &= proxyFlight.prepare(txnID);
+									System.out.println("TM:: received vote answer from flight. Now = " + success);
+								} catch (Exception e) {
+									if (e.getMessage().contains("aborted")) {
+										System.out.println("TM:: Received aborted message from flight.  Setting decision to false.");
+										success = false;
+									} else if (e.getMessage().contains("Connection refused")) {
+										System.out.println("TM:: Lost connection with flight. ");
+										success = false;
+									} else {
+										System.out.println("Some other exception:");
+										System.out.println(e.getMessage());
+									}
+								}
 								break;
 							case CAR:
 								System.out.println("TM:: sending vote request to car");
-								success &= proxyCar.prepare(txnID);
+								try {
+									success &= proxyCar.prepare(txnID);
+									System.out.println("TM:: received vote answer from car. Now = " + success);
+								} catch (Exception e) {
+									if (e.getMessage().contains("aborted")) {
+										System.out.println("TM:: Received aborted message from car.  Setting decision to false.");
+										success = false;
+									}
+								}
 								break;
 							case ROOM:
 								System.out.println("TM:: sending vote request to room");
-								success &= proxyRoom.prepare(txnID);
+								try {
+									success &= proxyRoom.prepare(txnID);
+									System.out.println("TM:: received vote answer from room. Now = " + success);
+								} catch (Exception e) {
+									if (e.getMessage().contains("aborted")) {
+										System.out.println("TM:: Received aborted message from room.  Setting decision to false.");
+										success = false;
+									} else if (e.getMessage().contains("Connection refused")) {
+										System.out.println("TM:: Lost connection with flight. ");
+										success = false;
+									} else {
+										System.out.println("Some other exception:");
+										System.out.println(e.getMessage());
+									}
+								}
 								break;
 							default:
 								break;
@@ -361,14 +418,6 @@ public class TransactionManager {
 					} else {
 						System.out.println("TM:: no RMs involved in this txn.  Committing nothing..");
 					}
-				} catch (Exception e) {
-					// One of the RM's consider the transaction invalid/aborted 
-					System.out.println("TM:: caught an error instead of a vote answer: ");
-					e.printStackTrace();
-					if (e.getMessage().contains("aborted")) {
-						success = false;
-					}
-				}
 				System.out.println("TM:: vote decision: " + success); 
 				return success;
 			}
@@ -380,11 +429,13 @@ public class TransactionManager {
 			successful = submit.get(1000, TimeUnit.MILLISECONDS);
 		}
 		catch(Exception e){
-			e.printStackTrace();
+			System.out.println("TM:: timeout on getting votes from RM's.  Decision is false");
+			successful = false;
+//			e.printStackTrace();
 		}
 		pool.shutdownNow();
 		
-		if (crashPoint == 8) return false;
+//		if (crashPoint == 8) return false;
 		if (crashPoint == 4) mw.selfDestruct();
 		
 		

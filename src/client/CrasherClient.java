@@ -88,18 +88,18 @@ public class CrasherClient extends WSClient {
 		print("Started new transaction: " + id);
 		switch(command){
 			case "newFlight":
+			case "newCar":
+			case "newRoom":
+			case "customer":
 				print("Running "+command+"(" + id +","+r1+","+r2+","+r3+")");
 				proxy.addFlight(id, r1,r2,r3);
-				break;
-			case "newCar":
+			
 				print("Running "+command+"(" + id +","+r1+","+r2+","+r3+")");
 				proxy.addCars(id, ""+r1,r2,r3);
-				break;
-			case "newRoom":
+			
 				print("Running "+command+"(" + id +","+r1+","+r2+","+r3+")");
 				proxy.addRooms(id, ""+r1,r2,r3);
-				break;
-			case "customer":
+			
 				print("Running newCustomer(" + id + ")");
 				int customer = proxy.newCustomer(id);
 				print("Customer ID: " + customer);
