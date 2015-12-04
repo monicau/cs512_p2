@@ -387,7 +387,7 @@ public class TransactionManager {
 		if (crashPoint == 8) return false;
 		if (crashPoint == 4) mw.selfDestruct();
 		
-		try {
+		
 			if(successful == null ){
 				// Timeout before receiving all votes. Send out abort
 				System.out.println("TM:: timeout before receiving all votes. Sending abort..");
@@ -395,20 +395,36 @@ public class TransactionManager {
 				for (RM rm : rms) {
 					switch (rm){
 					case CAR:
-						System.out.println("TM:: Aborting car");
-						proxyCar.abort(txnID);
+						try {
+							System.out.println("TM:: Aborting car");
+							proxyCar.abort(txnID);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
 						break;
 					case FLIGHT:
-						System.out.println("TM:: Aborting flight");
-						proxyFlight.abort(txnID);
+						try {
+							System.out.println("TM:: Aborting flight");
+							proxyFlight.abort(txnID);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
 						break;
 					case ROOM:
-						System.out.println("TM:: Aborting room");
-						proxyRoom.abort(txnID);
+						try {
+							System.out.println("TM:: Aborting room");
+							proxyRoom.abort(txnID);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
 						break;
 					case CUSTOMER:
-						System.out.println("TM:: Aborting customer");
-						mw.abortCustomer(txnID);
+						try {
+							System.out.println("TM:: Aborting customer");
+							mw.abortCustomer(txnID);
+						} catch (Exception e) {
+							e.printStackTrace();
+						}
 						break;
 					}
 				}
@@ -422,24 +438,40 @@ public class TransactionManager {
 			for (RM rm : rms) {
 				switch (rm){
 				case CAR:
-					System.out.println("Sending decision to car.. ");
-					oldTransactions.put( txnID, successful);
-					proxyCar.decisionPhase(txnID, successful);
+					try {
+						System.out.println("Sending decision to car.. ");
+						oldTransactions.put( txnID, successful);
+						proxyCar.decisionPhase(txnID, successful);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 					break;
 				case FLIGHT:
-					System.out.println("Sending decision to flight.. ");
-					oldTransactions.put( txnID, successful);
-					proxyFlight.decisionPhase(txnID, successful);
+					try {
+						System.out.println("Sending decision to flight.. ");
+						oldTransactions.put( txnID, successful);
+						proxyFlight.decisionPhase(txnID, successful);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 					break;
 				case ROOM:
-					System.out.println("Sending decision to room.. ");
-					oldTransactions.put( txnID, successful);
-					proxyRoom.decisionPhase(txnID, successful);
+					try {
+						System.out.println("Sending decision to room.. ");
+						oldTransactions.put( txnID, successful);
+						proxyRoom.decisionPhase(txnID, successful);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 					break;
 				case CUSTOMER:
-					System.out.println("Sending decision to mw.. ");
-					oldTransactions.put( txnID, successful);
-					mw.decisionPhase(txnID, successful);
+					try {
+						System.out.println("Sending decision to mw.. ");
+						oldTransactions.put( txnID, successful);
+						mw.decisionPhase(txnID, successful);
+					} catch (Exception e) {
+						e.printStackTrace();
+					}
 					break;
 				}
 				if (crashPoint == 6) mw.selfDestruct();
@@ -447,9 +479,7 @@ public class TransactionManager {
 			//Remove rm's from activeRM 
 			int index = activeTransactions.indexOf(txnID);
 			if (index != -1) activeTransactions.removeElementAt(index);
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
+		
 		if (crashPoint == 7) mw.selfDestruct();
 		return successful;
 	}   
